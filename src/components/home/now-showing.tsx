@@ -9,7 +9,13 @@ interface NowShowingProps {
 }
 
 export function NowShowing({ movies }: NowShowingProps) {
-  if (!movies.length) return null;
+  if (!movies.length) {
+    return (
+      <section id="now-showing" className="container-app py-16 text-center">
+        <p className="text-muted italic">No movies currently showing. Please check back later!</p>
+      </section>
+    );
+  }
 
   return (
     <section id="now-showing" className="container-app py-16">

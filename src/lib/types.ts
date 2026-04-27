@@ -43,7 +43,7 @@ export interface Booking {
   discount: number;
   final_amount: number;
   promo_code_used: string | null;
-  payment_mode: "demo" | "cash";
+  payment_mode: "cash";
   payment_status: "completed" | "pending";
   booking_status: "confirmed" | "cancelled";
   created_at: string;
@@ -83,7 +83,7 @@ export interface BookingState {
   promoCode: string;
   discount: number;
   discountType: "percentage" | "fixed" | null;
-  paymentMode: "demo" | "cash";
+  paymentMode: "cash";
 }
 
 export interface BookingActions {
@@ -93,7 +93,7 @@ export interface BookingActions {
   setCustomerInfo: (info: { name: string; phone: string; email: string }) => void;
   setPromo: (code: string, discount: number, type: "percentage" | "fixed") => void;
   clearPromo: () => void;
-  setPaymentMode: (mode: "demo" | "cash") => void;
+  setPaymentMode: (mode: "cash") => void;
   getSubtotal: () => number;
   getFinalAmount: () => number;
   reset: () => void;

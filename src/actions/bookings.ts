@@ -1,7 +1,6 @@
 "use server";
 
 import { verifyAdmin, createAdminClient } from "@/lib/supabase/admin";
-import { isSupabaseConfigured, DEMO_BOOKINGS, DEMO_STATS, DEMO_SHOWTIMES, DEMO_MOVIES } from "@/lib/demo-data";
 import type { Booking, DashboardStats } from "@/lib/types";
 import { generateBookingId } from "@/lib/utils";
 import { updateBookedSeats } from "./showtimes";
@@ -17,37 +16,13 @@ interface CreateBookingInput {
   discount: number;
   finalAmount: number;
   promoCodeUsed: string | null;
-  paymentMode: "demo" | "cash";
+  paymentMode: "cash";
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const bookingId = generateBookingId();
-
-  if (!isSupabaseConfigured()) {
-    // Demo mode — return a fake booking object
-    const st = DEMO_SHOWTIMES.find((s) => s.id === input.showtimeId);
-    const movie = st ? DEMO_MOVIES.find((m) => m.id === st.movie_id) : null;
-    return {
-      id: `demo-${Date.now()}`,
-      booking_id: bookingId,
-      showtime_id: input.showtimeId,
-      customer_name: input.customerName,
-      phone: input.phone,
-      email: input.email,
-      selected_seats: input.selectedSeats,
-      subtotal: input.subtotal,
-      discount: input.discount,
-      final_amount: input.finalAmount,
-      promo_code_used: input.promoCodeUsed,
-      payment_mode: input.paymentMode,
-      payment_status: "completed",
-      booking_status: "confirmed",
-      created_at: new Date().toISOString(),
-      showtime: st ? { ...st, movie: movie || undefined } : undefined,
-    };
-  }
-
   const supabase = createAdminClient();
+
   const { data, error } = await supabase
     .from("bookings")
     .insert([{
@@ -87,7 +62,6 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 }
 
 export async function getBookings(): Promise<Booking[]> {
-  if (!isSupabaseConfigured()) return DEMO_BOOKINGS;
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -99,9 +73,6 @@ export async function getBookings(): Promise<Booking[]> {
 }
 
 export async function getBookingById(bookingId: string): Promise<Booking | null> {
-  if (!isSupabaseConfigured()) {
-    return DEMO_BOOKINGS.find((b) => b.booking_id === bookingId) || null;
-  }
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -117,7 +88,6 @@ export async function getBookingById(bookingId: string): Promise<Booking | null>
 }
 
 export async function cancelBooking(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) throw new Error("Connect Supabase to cancel bookings");
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data: booking } = await supabase
@@ -154,7 +124,6 @@ export async function cancelBooking(id: string): Promise<void> {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  if (!isSupabaseConfigured()) return DEMO_STATS;
   await verifyAdmin();
   const supabase = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
@@ -177,7 +146,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getRecentBookings(limit: number = 10): Promise<Booking[]> {
-  if (!isSupabaseConfigured()) return DEMO_BOOKINGS.slice(0, limit);
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -188,3 +156,4 @@ export async function getRecentBookings(limit: number = 10): Promise<Booking[]> 
   if (error) throw new Error(error.message);
   return data || [];
 }
+

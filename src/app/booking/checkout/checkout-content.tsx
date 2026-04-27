@@ -173,7 +173,7 @@ export function CheckoutContent() {
                   {promoMessage.text}
                 </motion.div>
               )}
-              <p className="text-xs text-muted-dark mt-2">Try: DEMO (100% off), FIRST50 (50% off), FLAT100 (₹100 off)</p>
+              <p className="text-xs text-muted-dark mt-2">Enter a valid promo code to get discounts on your tickets.</p>
             </div>
 
             {/* Payment Mode */}
@@ -181,20 +181,17 @@ export function CheckoutContent() {
               <h3 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-gold" /> Payment Mode
               </h3>
-              <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as "demo" | "cash")}>
+              <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as "cash")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="demo">
-                    <span className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> Demo Payment (Free)</span>
-                  </SelectItem>
                   <SelectItem value="cash">
                     <span className="flex items-center gap-2"><Banknote className="w-4 h-4" /> Cash At Counter</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-dark mt-2">Razorpay integration coming soon. Currently using demo payment mode.</p>
+              <p className="text-xs text-muted-dark mt-2">Razorpay integration coming soon. Pay at the counter to confirm your seats.</p>
             </div>
           </div>
 

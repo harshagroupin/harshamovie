@@ -1,7 +1,6 @@
 "use server";
 
 import { verifyAdmin, createAdminClient } from "@/lib/supabase/admin";
-import { isSupabaseConfigured, DEMO_PROMOS } from "@/lib/demo-data";
 import type { PromoCode } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
@@ -11,30 +10,6 @@ export async function validatePromoCode(code: string): Promise<{
   type: "percentage" | "fixed";
   message: string;
 }> {
-  if (!isSupabaseConfigured()) {
-    // Validate against demo promos
-    const promo = DEMO_PROMOS.find(
-      (p) => p.code === code.toUpperCase() && p.is_active
-    );
-    if (!promo) {
-      return { valid: false, discount: 0, type: "percentage", message: "Invalid promo code" };
-    }
-    if (promo.expiry_date && new Date(promo.expiry_date) < new Date()) {
-      return { valid: false, discount: 0, type: "percentage", message: "Promo code has expired" };
-    }
-    if (promo.usage_limit > 0 && promo.times_used >= promo.usage_limit) {
-      return { valid: false, discount: 0, type: "percentage", message: "Promo code usage limit reached" };
-    }
-    return {
-      valid: true,
-      discount: promo.discount_value,
-      type: promo.discount_type,
-      message: promo.discount_type === "percentage"
-        ? `${promo.discount_value}% discount applied!`
-        : `₹${promo.discount_value} discount applied!`,
-    };
-  }
-
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -70,7 +45,6 @@ export async function validatePromoCode(code: string): Promise<{
 }
 
 export async function getPromoCodes(): Promise<PromoCode[]> {
-  if (!isSupabaseConfigured()) return DEMO_PROMOS;
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -82,7 +56,6 @@ export async function getPromoCodes(): Promise<PromoCode[]> {
 }
 
 export async function createPromoCode(promo: Partial<PromoCode>): Promise<PromoCode> {
-  if (!isSupabaseConfigured()) throw new Error("Connect Supabase to create promo codes");
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -96,7 +69,6 @@ export async function createPromoCode(promo: Partial<PromoCode>): Promise<PromoC
 }
 
 export async function updatePromoCode(id: string, updates: Partial<PromoCode>): Promise<PromoCode> {
-  if (!isSupabaseConfigured()) throw new Error("Connect Supabase to update promo codes");
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -111,10 +83,10 @@ export async function updatePromoCode(id: string, updates: Partial<PromoCode>): 
 }
 
 export async function deletePromoCode(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) throw new Error("Connect Supabase to delete promo codes");
   await verifyAdmin();
   const supabase = createAdminClient();
   const { error } = await supabase.from("promo_codes").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
+

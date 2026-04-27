@@ -79,24 +79,6 @@ export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
       {/* Upcoming */}
       <UpcomingMovies movies={upcoming} />
 
-      {/* Promo Banner */}
-      <ScrollReveal>
-        <section className="container-app py-16">
-          <div className="relative overflow-hidden rounded-2xl glass-accent p-8 md:p-12">
-            <div className="relative z-10">
-              <span className="text-gold text-sm font-semibold uppercase tracking-wider">Special Offer</span>
-              <h3 className="font-display text-2xl md:text-3xl font-bold mt-2 mb-3">
-                Use code <span className="text-accent">DEMO</span> for 100% off!
-              </h3>
-              <p className="text-muted text-sm max-w-md">
-                Experience {APP_NAME} with a free ticket. Use promo code DEMO at checkout to get your tickets at ₹0.
-              </p>
-            </div>
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-accent/10 blur-3xl" />
-            <div className="absolute -right-5 -top-5 w-20 h-20 rounded-full bg-gold/10 blur-2xl" />
-          </div>
-        </section>
-      </ScrollReveal>
     </PageTransition>
   );
 }

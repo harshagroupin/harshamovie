@@ -38,7 +38,6 @@ export const ADMIN_NAV_LINKS = [
 ];
 
 export const PAYMENT_MODES = [
-  { value: "demo", label: "Demo Payment (Free)" },
   { value: "cash", label: "Cash At Counter" },
 ];
 

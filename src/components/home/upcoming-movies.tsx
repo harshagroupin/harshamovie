@@ -23,7 +23,13 @@ export function UpcomingMovies({ movies }: UpcomingMoviesProps) {
     }
   };
 
-  if (!movies.length) return null;
+  if (!movies.length) {
+    return (
+      <section id="upcoming" className="container-app py-16 text-center">
+        <p className="text-muted italic">No upcoming movies scheduled. Stay tuned!</p>
+      </section>
+    );
+  }
 
   return (
     <section id="upcoming" className="py-16">

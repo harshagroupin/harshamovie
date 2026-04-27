@@ -17,7 +17,7 @@ const initialState: BookingState = {
   promoCode: "",
   discount: 0,
   discountType: null,
-  paymentMode: "demo",
+  paymentMode: "cash",
 };
 
 export const useBookingStore = create<BookingState & BookingActions>(
