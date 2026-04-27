@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   discount DECIMAL(10,2) DEFAULT 0,
   final_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
   promo_code_used TEXT,
-  payment_mode TEXT DEFAULT 'demo',
+  payment_mode TEXT DEFAULT 'cash',
   payment_status TEXT DEFAULT 'completed',
   booking_status TEXT DEFAULT 'confirmed',
   created_at TIMESTAMPTZ DEFAULT now()

@@ -62,6 +62,6 @@ src/
 - 🎥 Movie CRUD with media management
 - ⏰ Showtime management
 - 🎫 Booking management with cancellation
-- 🏷️ Promo code system (DEMO = 100% off)
+- 🏷️ Promo code system (FIRST50 = 50% off)
 - 📱 Fully responsive design
 - ✨ Premium cinema theme with animations

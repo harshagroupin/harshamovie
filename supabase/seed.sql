@@ -121,7 +121,6 @@ END $$;
 -- SEED PROMO CODES
 -- ====================================================
 INSERT INTO promo_codes (code, discount_type, discount_value, usage_limit, is_active) VALUES
-('DEMO', 'percentage', 100, 0, true),
 ('FIRST50', 'percentage', 50, 100, true),
 ('FLAT100', 'fixed', 100, 50, true),
 ('WELCOME', 'percentage', 25, 200, true);
