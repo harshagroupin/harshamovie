@@ -25,33 +25,42 @@ export function UpcomingMovies({ movies }: UpcomingMoviesProps) {
 
   if (!movies.length) {
     return (
-      <section id="upcoming" className="container-app py-16 text-center">
-        <p className="text-muted italic">No upcoming movies scheduled. Stay tuned!</p>
+      <section id="upcoming" className="container-app py-10 text-center">
+        <div className="max-w-md mx-auto py-10 px-6 rounded-2xl bg-gradient-to-br from-[#FFF5F5] to-[#FFF0F0] border border-[#FFE0E0]">
+          <div className="w-14 h-14 rounded-full bg-[#FFECEC] flex items-center justify-center mx-auto mb-4">
+            <span className="text-xl">🍿</span>
+          </div>
+          <p className="text-[#E50914] text-base font-semibold">No upcoming movies scheduled</p>
+          <p className="text-[#8E8E93] text-sm mt-1">Stay tuned for exciting releases!</p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section id="upcoming" className="py-16">
+    <section id="upcoming" className="pb-16">
       <div className="container-app">
         <ScrollReveal>
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="font-display text-2xl md:text-3xl font-bold">
-                Coming Soon
-              </h2>
-              <p className="text-muted text-sm mt-1">Upcoming releases you don&apos;t want to miss</p>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-1 h-7 rounded-full bg-[#E50914]" />
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-[#1A1A2E]">
+                  Coming Soon
+                </h2>
+              </div>
+              <p className="text-[#8E8E93] text-sm md:text-base mt-1 ml-[19px]">Upcoming releases you don&apos;t want to miss</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => scroll("left")}
-                className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center hover:bg-surface-lighter transition-colors"
+                className="w-10 h-10 rounded-xl bg-[#F5F5F7] flex items-center justify-center hover:bg-[#ECECEE] transition-all text-[#636366] hover:text-[#1A1A2E] hover:shadow-md active:scale-95"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => scroll("right")}
-                className="w-10 h-10 rounded-full bg-surface-light flex items-center justify-center hover:bg-surface-lighter transition-colors"
+                className="w-10 h-10 rounded-xl bg-[#F5F5F7] flex items-center justify-center hover:bg-[#ECECEE] transition-all text-[#636366] hover:text-[#1A1A2E] hover:shadow-md active:scale-95"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -61,8 +70,7 @@ export function UpcomingMovies({ movies }: UpcomingMoviesProps) {
 
         <div
           ref={scrollRef}
-          className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
         >
           {movies.map((movie, i) => (
             <div key={movie.id} className="min-w-[180px] md:min-w-[220px] snap-start">

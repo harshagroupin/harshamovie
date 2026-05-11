@@ -31,17 +31,17 @@ export function DashboardContent({ stats, recentBookings }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted text-sm mt-1">Welcome to Harsh A Movie admin panel</p>
+            <h1 className="font-display text-3xl md:text-4xl font-black">Dashboard</h1>
+            <p className="text-muted text-base mt-1.5">Welcome to Harsh A Movie admin panel</p>
           </div>
           <div className="flex gap-3">
             <Link href="/admin/movies/new">
-              <Button size="sm" className="gap-2 rounded-lg">
+              <Button size="default" className="gap-2 rounded-xl text-[15px] font-bold px-6 shadow-lg shadow-accent/20">
                 <Plus className="w-4 h-4" /> Add Movie
               </Button>
             </Link>
             <Link href="/admin/showtimes">
-              <Button size="sm" variant="outline" className="gap-2 rounded-lg">
+              <Button size="default" variant="outline" className="gap-2 rounded-xl text-[15px] font-medium px-6">
                 <Clock className="w-4 h-4" /> Showtimes
               </Button>
             </Link>
@@ -49,7 +49,7 @@ export function DashboardContent({ stats, recentBookings }: Props) {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {kpiCards.map((kpi, i) => (
             <motion.div
               key={kpi.key}
@@ -57,21 +57,21 @@ export function DashboardContent({ stats, recentBookings }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card className="bg-surface border-border hover:border-accent/20 transition-colors">
+              <Card className="bg-surface border-border hover:border-accent/20 transition-all hover:shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted uppercase tracking-wider font-medium">{kpi.label}</p>
-                      <div className="mt-2">
+                      <p className="text-sm text-muted uppercase tracking-wider font-semibold">{kpi.label}</p>
+                      <div className="mt-3">
                         <AnimatedCounter
                           value={stats[kpi.key]}
                           prefix={kpi.isCurrency ? "₹" : ""}
-                          className={`font-display text-3xl font-black ${kpi.color}`}
+                          className={`font-display text-4xl font-black ${kpi.color}`}
                         />
                       </div>
                     </div>
-                    <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
-                      <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+                    <div className={`w-12 h-12 rounded-xl ${kpi.bg} flex items-center justify-center`}>
+                      <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
                     </div>
                   </div>
                 </CardContent>
@@ -83,40 +83,45 @@ export function DashboardContent({ stats, recentBookings }: Props) {
         {/* Recent Bookings */}
         <Card className="bg-surface border-border">
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Recent Bookings</CardTitle>
+            <CardTitle className="text-xl font-bold">Recent Bookings</CardTitle>
             <Link href="/admin/bookings">
-              <Button variant="ghost" size="sm">View All →</Button>
+              <Button variant="ghost" size="sm" className="text-[15px]">View All →</Button>
             </Link>
           </CardHeader>
           <CardContent>
             {recentBookings.length === 0 ? (
-              <p className="text-muted text-center py-8">No bookings yet</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-surface-light flex items-center justify-center mx-auto mb-4">
+                  <Ticket className="w-7 h-7 text-muted" />
+                </div>
+                <p className="text-muted text-base">No bookings yet</p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[15px]">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-2 text-muted font-medium">Booking ID</th>
-                      <th className="text-left py-3 px-2 text-muted font-medium">Customer</th>
-                      <th className="text-left py-3 px-2 text-muted font-medium hidden md:table-cell">Movie</th>
-                      <th className="text-left py-3 px-2 text-muted font-medium hidden sm:table-cell">Seats</th>
-                      <th className="text-left py-3 px-2 text-muted font-medium">Amount</th>
-                      <th className="text-left py-3 px-2 text-muted font-medium">Status</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm">Booking ID</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm">Customer</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm hidden md:table-cell">Movie</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm hidden sm:table-cell">Seats</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm">Amount</th>
+                      <th className="text-left py-4 px-3 text-muted font-semibold text-sm">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentBookings.map((booking) => (
                       <tr key={booking.id} className="border-b border-border/50 hover:bg-surface-light/50 transition-colors">
-                        <td className="py-3 px-2 font-mono text-xs text-accent">{booking.booking_id}</td>
-                        <td className="py-3 px-2">{booking.customer_name}</td>
-                        <td className="py-3 px-2 hidden md:table-cell text-muted">
+                        <td className="py-4 px-3 font-mono text-xs text-accent font-bold">{booking.booking_id}</td>
+                        <td className="py-4 px-3 font-medium">{booking.customer_name}</td>
+                        <td className="py-4 px-3 hidden md:table-cell text-muted">
                           {(booking.showtime as any)?.movie?.title || "N/A"}
                         </td>
-                        <td className="py-3 px-2 hidden sm:table-cell">
+                        <td className="py-4 px-3 hidden sm:table-cell font-semibold">
                           {(booking.selected_seats as string[])?.length || 0}
                         </td>
-                        <td className="py-3 px-2 font-medium">{formatCurrency(booking.final_amount)}</td>
-                        <td className="py-3 px-2">
+                        <td className="py-4 px-3 font-bold">{formatCurrency(booking.final_amount)}</td>
+                        <td className="py-4 px-3">
                           <Badge variant={booking.booking_status === "confirmed" ? "success" : "destructive"}>
                             {booking.booking_status}
                           </Badge>
