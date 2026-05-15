@@ -60,18 +60,18 @@ export default function AdminLayout({
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-5 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl gradient-accent flex items-center justify-center shrink-0 shadow-lg shadow-red-500/20">
+        <div className="w-11 h-11 rounded-xl bg-accent flex items-center justify-center shrink-0 shadow-lg shadow-accent/20">
           <Film className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <span className="font-display font-bold text-base">{APP_NAME}</span>
-            <p className="text-[11px] text-gold font-medium">Admin Panel</p>
+            <span className="font-display font-bold text-base text-foreground">{APP_NAME}</span>
+            <p className="text-[11px] text-accent font-semibold tracking-wide uppercase">Admin Panel</p>
           </motion.div>
         )}
       </div>
 
-      <Separator className="mx-4 mb-2" />
+      <Separator className="mx-4 mb-2 bg-border-subtle" />
 
       {/* Nav Items */}
       <nav className="flex-1 p-2 space-y-1">
@@ -85,11 +85,13 @@ export default function AdminLayout({
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all",
                 isActive
-                  ? "bg-accent/20 text-accent"
-                  : "text-muted hover:text-foreground hover:bg-surface-lighter"
+                  ? "bg-accent/10 text-accent"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >
-              {iconMap[item.icon]}
+              <div className={cn("transition-colors", isActive ? "text-accent" : "text-muted")}>
+                {iconMap[item.icon]}
+              </div>
               {!collapsed && <span>{item.label}</span>}
               {isActive && !collapsed && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-accent" />
@@ -100,13 +102,13 @@ export default function AdminLayout({
       </nav>
 
       {/* Bottom Actions */}
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-2 border-t border-border">
         <Link href="/" onClick={() => setMobileOpen(false)}>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted">
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-foreground hover:bg-surface-hover">
             <ChevronLeft className="w-4 h-4" /> {!collapsed && "View Site"}
           </Button>
         </Link>
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-danger" onClick={handleLogout}>
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-danger hover:bg-red-50" onClick={handleLogout}>
           <LogOut className="w-4 h-4" /> {!collapsed && "Logout"}
         </Button>
       </div>

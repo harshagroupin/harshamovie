@@ -12,7 +12,7 @@ export default async function HomePage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
+      <main>
         <HomeContent movies={movies} featuredMovies={featured} />
       </main>
       <Footer />

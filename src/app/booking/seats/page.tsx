@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { SeatSelectionContent } from "./seat-selection-content";
-import { MovieDetailSkeleton } from "@/components/shared/loading-skeleton";
 
 export const metadata = { title: "Select Seats" };
 
@@ -9,8 +8,12 @@ export default function SeatSelectionPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-20">
-        <Suspense fallback={<div className="container-app py-12"><MovieDetailSkeleton /></div>}>
+      <main>
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        }>
           <SeatSelectionContent />
         </Suspense>
       </main>

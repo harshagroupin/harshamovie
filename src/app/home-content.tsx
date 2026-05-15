@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { HeroCarousel } from "@/components/home/hero-carousel";
-import { NowShowing } from "@/components/home/now-showing";
-import { UpcomingMovies } from "@/components/home/upcoming-movies";
-import { SearchFilter } from "@/components/home/search-filter";
-import { PageTransition } from "@/components/shared/page-transition";
-import { ScrollReveal } from "@/components/shared/scroll-reveal";
-import { APP_NAME } from "@/lib/constants";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Film, Calendar, SlidersHorizontal, ChevronDown } from "lucide-react";
 import type { Movie } from "@/lib/types";
+import { LANGUAGES } from "@/lib/constants";
 
 interface HomeContentProps {
   movies: Movie[];
@@ -16,69 +14,341 @@ interface HomeContentProps {
 }
 
 export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeGenre, setActiveGenre] = useState<string | null>(null);
-  const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
-
-  // Compare only the date portion (strip time) to avoid timezone-induced
-  // misclassification where e.g. "2026-04-26" parses as midnight UTC and
-  // ends up "in the future" for users in UTC+5:30 earlier in the day.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const nowShowing = useMemo(() => {
-    let filtered = movies.filter((m) => {
-      const rel = new Date(m.release_date);
-      rel.setHours(0, 0, 0, 0);
-      return rel <= today;
-    });
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (m) =>
-          m.title.toLowerCase().includes(q) ||
-          m.genre.some((g) => g.toLowerCase().includes(q)) ||
-          m.language.toLowerCase().includes(q)
-      );
-    }
-
-    if (activeGenre) {
-      filtered = filtered.filter((m) => m.genre.includes(activeGenre));
-    }
-
-    if (activeLanguage) {
-      filtered = filtered.filter((m) => m.language === activeLanguage);
-    }
-
-    return filtered;
-  }, [movies, searchQuery, activeGenre, activeLanguage]);
+  const nowShowing = useMemo(
+    () =>
+      movies.filter((m) => {
+        const rel = new Date(m.release_date);
+        rel.setHours(0, 0, 0, 0);
+        return rel <= today;
+      }),
+    [movies]
+  );
 
   const upcoming = useMemo(
     () => movies.filter((m) => new Date(m.release_date) > new Date()),
     [movies]
   );
 
+  // Get this week's releases (last 7 days)
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const thisWeekReleases = useMemo(
+    () =>
+      nowShowing.filter((m) => {
+        const rel = new Date(m.release_date);
+        return rel >= weekAgo;
+      }).slice(0, 9),
+    [nowShowing]
+  );
+
+  // Carousel movies — use featured or first 6 showing
+  const carouselMovies = useMemo(
+    () => (featuredMovies.length > 0 ? featuredMovies : nowShowing).slice(0, 6),
+    [featuredMovies, nowShowing]
+  );
+
   return (
-    <PageTransition>
-      {/* Hero Carousel — always renders with data */}
-      <HeroCarousel movies={featuredMovies} />
+    <div className="min-h-screen bg-white">
+      {/* ===== HERO CAROUSEL ===== */}
+      {carouselMovies.length > 0 && (
+        <HeroCarousel movies={carouselMovies} />
+      )}
 
-      {/* Search & Filter */}
-      <SearchFilter
-        onSearch={setSearchQuery}
-        onGenreFilter={setActiveGenre}
-        onLanguageFilter={setActiveLanguage}
-        activeGenre={activeGenre}
-        activeLanguage={activeLanguage}
-      />
+      {/* ===== CONTENT ===== */}
+      <div className="flex flex-col items-center gap-10 md:gap-[68px] w-full">
+        {/* ===== THIS WEEK'S RELEASES ===== */}
+        {thisWeekReleases.length > 0 && (
+          <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
+                This Week&apos;s Releases
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
+              {thisWeekReleases.map((movie, i) => (
+                <MovieCard key={movie.id} movie={movie} index={i} />
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* Now Showing */}
-      <NowShowing movies={nowShowing} />
+        {/* ===== ONLY IN THEATRES (Now Showing) ===== */}
+        <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0">
+          <div className="mb-6 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
+              Only in Theatres
+            </h2>
+          </div>
 
-      {/* Upcoming */}
-      <UpcomingMovies movies={upcoming} />
+          {/* Filter bar */}
+          <FilterBar />
 
-    </PageTransition>
+          {nowShowing.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
+              {nowShowing.map((movie, i) => (
+                <MovieCard key={movie.id} movie={movie} index={i} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Film className="w-8 h-8 text-[#0B70D5]" />}
+              title="Coming Soon"
+              description="New blockbusters arriving soon. Stay tuned for the latest releases."
+            />
+          )}
+        </section>
+
+        {/* ===== COMING SOON ===== */}
+        {upcoming.length > 0 && (
+          <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 pb-16">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
+                Coming Soon
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
+              {upcoming.map((movie, i) => (
+                <MovieCard key={movie.id} movie={movie} index={i} variant="upcoming" />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ===== HERO CAROUSEL ===== */
+function HeroCarousel({ movies }: { movies: Movie[] }) {
+  const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setDirection(1);
+      setCurrent((prev) => (prev + 1) % movies.length);
+    }, 5000);
+  }, [movies.length]);
+
+  useEffect(() => {
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [resetTimer]);
+
+  const goTo = (idx: number) => {
+    setDirection(idx > current ? 1 : -1);
+    setCurrent(idx);
+    resetTimer();
+  };
+
+  const prev = () => {
+    setDirection(-1);
+    setCurrent((c) => (c - 1 + movies.length) % movies.length);
+    resetTimer();
+  };
+
+  const next = () => {
+    setDirection(1);
+    setCurrent((c) => (c + 1) % movies.length);
+    resetTimer();
+  };
+
+  const movie = movies[current];
+
+  return (
+    <section className="relative w-full overflow-hidden">
+      <div className="relative flex px-4 md:px-12 pt-4 md:pt-[32px] pb-6 md:pb-[48px] items-center justify-center w-full min-h-[150px] md:min-h-[400px]">
+        {/* Blurred Background */}
+        <div
+          className="absolute inset-0 w-full h-full z-0 transition-opacity duration-700"
+          style={{
+            backgroundImage: `url(${movie.banner_url || movie.poster_url})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(24px)",
+            transform: "scale(1.1)",
+          }}
+          aria-hidden="true"
+        />
+        {/* White gradient overlay for seamless blending */}
+        <div
+          className="absolute inset-0 w-full h-full z-[1]"
+          style={{
+            background: "linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.8) 50%, #FFFFFF 100%)",
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Content */}
+        <div className="relative z-[3] flex flex-col md:flex-row items-center justify-between w-full max-w-[1200px] gap-6 md:gap-10">
+          {/* Text Side */}
+          <motion.div
+            key={movie.id}
+            initial={{ opacity: 0, x: direction >= 0 ? 40 : -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction >= 0 ? -40 : 40 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col gap-5 md:gap-6 flex-1 order-2 md:order-1"
+          >
+            <div className="flex flex-col gap-4 pr-0 md:pr-8">
+              <h2 className="text-4xl md:text-6xl lg:text-6xl font-extrabold text-[#131316] tracking-tight leading-[1.1] my-0">
+                {movie.title}
+              </h2>
+              <span className="text-xl md:text-2xl font-bold text-[#131316]">
+                {movie.rating} | {movie.genre?.slice(0, 3).join(", ")}
+              </span>
+              <p className="text-base md:text-lg text-[#131316] max-w-[700px] hidden md:block line-clamp-3 leading-relaxed">
+                {movie.description || "A cinematic experience that will keep you on the edge of your seat. Grab your tickets now to witness the magic on the big screen."}
+              </p>
+            </div>
+            <div>
+              <Link href={`/movie/${movie.slug}`}>
+                <button className="btn-book text-lg font-bold px-10 py-4 h-auto rounded-2xl">
+                  Book now
+                </button>
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.div
+            key={`poster-${movie.id}`}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center gap-6 order-1 md:order-2 shrink-0"
+          >
+            <div className="relative w-[140px] md:w-[180px] lg:w-[220px] rounded-xl overflow-hidden shadow-xl">
+              <div className="w-full aspect-[2/3]">
+                <Image
+                  src={movie.poster_url || "/images/placeholder-poster.svg"}
+                  alt={movie.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 140px, (max-width: 1024px) 180px, 220px"
+                />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Navigation Arrows */}
+        <button
+          onClick={prev}
+          className="hidden md:flex absolute left-2 xl:left-[5vw] top-[40%] z-[4] w-10 h-10 items-center justify-center cursor-pointer bg-transparent border-0"
+          aria-label="Previous movie"
+        >
+          <ChevronLeft className="w-6 h-6 text-[#131316]/60 hover:text-[#131316]" />
+        </button>
+        <button
+          onClick={next}
+          className="hidden md:flex absolute right-2 xl:right-[5vw] top-[40%] z-[4] w-10 h-10 items-center justify-center cursor-pointer bg-transparent border-0"
+          aria-label="Next movie"
+        >
+          <ChevronRight className="w-6 h-6 text-[#131316]/60 hover:text-[#131316]" />
+        </button>
+      </div>
+
+      {/* Pagination Dots */}
+      <div className="flex items-center justify-center gap-2 pb-4 -mt-4 relative z-[5]">
+        {movies.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => goTo(idx)}
+            className={`rounded-full transition-all duration-300 border-0 cursor-pointer ${idx === current
+              ? "w-6 h-2 bg-[#0B70D5]"
+              : "w-2 h-2 bg-[#D0D0D4] hover:bg-[#A0A0A4]"
+              }`}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ===== FILTER BAR ===== */
+function FilterBar() {
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const filters = ["English", "Hindi", "New Releases", "Re-Releases"];
+
+  return (
+    <div className="w-full py-3 mb-4 -mt-2">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+        {/* Filters button */}
+        <button className="filter-pill gap-1.5 pl-2.5 ml-3 sm:ml-0">
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Filters</span>
+          <ChevronDown className="w-4 h-4 rotate-180" />
+        </button>
+
+        {/* Language filters */}
+        {filters.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
+            className={`filter-pill ${activeFilter === filter ? "active" : ""}`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== MOVIE CARD ===== */
+function MovieCard({ movie, index, variant = "default" }: { movie: Movie; index: number; variant?: "default" | "upcoming" }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.03 }}
+    >
+      <Link href={`/movie/${movie.slug}`} className="block no-underline">
+        <div className="movie-card h-full">
+          {/* Poster */}
+          <div className="poster-wrap">
+            <Image
+              src={movie.poster_url || "/images/placeholder-poster.svg"}
+              alt={movie.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 16vw"
+            />
+          </div>
+
+          {/* Info */}
+          <div className="card-info">
+            <h5 className="card-title">{movie.title}</h5>
+            <span className="card-meta">
+              {movie.rating} | {movie.language}
+            </span>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+/* ===== EMPTY STATE ===== */
+function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center py-20 px-6 rounded-2xl border border-[#E8E8EA] bg-[#F5F5F6]"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-[#E2F1FE] flex items-center justify-center mb-5">
+        {icon}
+      </div>
+      <h3 className="text-lg font-bold text-[#131316] mb-1.5">{title}</h3>
+      <p className="text-[#545459] text-sm max-w-sm text-center leading-relaxed">{description}</p>
+    </motion.div>
   );
 }

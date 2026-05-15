@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
 
-const inter = Inter({
+const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-be-vietnam-pro",
   display: "swap",
 });
 
@@ -36,16 +31,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-background text-foreground`}>
+    <html lang="en" data-theme="light" style={{ scrollbarWidth: "none", overscrollBehavior: "none" }}>
+      <body className={`${beVietnamPro.variable} font-sans antialiased bg-background text-foreground`}>
         {children}
         <Toaster
           position="top-right"
           toastOptions={{
             style: {
-              background: "#151515",
-              border: "1px solid #2A2A2A",
-              color: "#FFFFFF",
+              background: "#FFFFFF",
+              border: "1px solid #E8E8EA",
+              color: "#131316",
             },
           }}
         />

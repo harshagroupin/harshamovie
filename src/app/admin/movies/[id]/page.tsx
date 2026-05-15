@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageTransition } from "@/components/shared/page-transition";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { getMovieById, updateMovie } from "@/actions/movies";
 import { slugify } from "@/lib/utils";
 import { GENRES, LANGUAGES, RATINGS } from "@/lib/constants";
@@ -98,9 +99,25 @@ export default function EditMoviePage({ params }: { params: Promise<{ id: string
           <Card className="bg-surface border-border">
             <CardHeader><CardTitle className="text-base">Media</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2"><Label>Poster URL</Label><Input value={form.poster_url} onChange={(e) => updateField("poster_url", e.target.value)} /></div>
-              <div className="space-y-2"><Label>Banner URL</Label><Input value={form.banner_url} onChange={(e) => updateField("banner_url", e.target.value)} /></div>
-              <div className="space-y-2"><Label>Trailer URL</Label><Input value={form.trailer_url} onChange={(e) => updateField("trailer_url", e.target.value)} /></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Poster Image</Label>
+                  <ImageUpload 
+                    value={form.poster_url} 
+                    onChange={(url) => updateField("poster_url", url)} 
+                    label="Upload Poster"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Banner Image</Label>
+                  <ImageUpload 
+                    value={form.banner_url} 
+                    onChange={(url) => updateField("banner_url", url)} 
+                    label="Upload Banner"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 mt-4"><Label>Trailer URL</Label><Input value={form.trailer_url} onChange={(e) => updateField("trailer_url", e.target.value)} /></div>
             </CardContent>
           </Card>
 

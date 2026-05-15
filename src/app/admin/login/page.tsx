@@ -40,31 +40,26 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 gradient-radial opacity-50" />
-      <div className="absolute top-1/4 -right-20 w-60 h-60 rounded-full bg-accent/5 blur-3xl" />
-      <div className="absolute bottom-1/4 -left-20 w-60 h-60 rounded-full bg-gold/5 blur-3xl" />
-
+    <div className="min-h-screen flex items-center justify-center bg-surface-secondary relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md mx-4 relative z-10"
       >
-        <div className="glass rounded-2xl p-8">
+        <div className="bg-surface border border-border shadow-lg rounded-2xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl gradient-accent mx-auto mb-4 flex items-center justify-center shadow-xl shadow-accent/30">
-              <Film className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-md">
+              <Film className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h1 className="font-display text-2xl font-bold">{APP_NAME}</h1>
-            <p className="text-muted text-sm mt-1">Admin Panel Login</p>
+            <h1 className="font-display text-2xl font-bold text-foreground">{APP_NAME}</h1>
+            <p className="text-muted-foreground text-sm mt-1">Admin Panel Login</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -72,11 +67,12 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter admin email"
                 autoComplete="email"
+                className="bg-surface text-foreground border-border"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -85,21 +81,22 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   autoComplete="current-password"
+                  className="bg-surface text-foreground border-border pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" size="lg" className="w-full rounded-xl" disabled={loading}>
+            <Button type="submit" size="lg" className="w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 mt-2" disabled={loading}>
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                   Signing in...
                 </span>
               ) : (
@@ -108,7 +105,7 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-muted-dark mt-6">
+          <p className="text-center text-xs text-muted-foreground mt-6">
             Admin access only. Contact support if you need help.
           </p>
         </div>

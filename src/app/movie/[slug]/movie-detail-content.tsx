@@ -4,11 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, Globe, Star, Calendar, Play } from "lucide-react";
+import { Clock, Globe, Star, Calendar, Play, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { PageTransition } from "@/components/shared/page-transition";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { useBookingStore } from "@/hooks/use-booking-store";
@@ -49,8 +48,8 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
 
   return (
     <PageTransition>
-      {/* Banner Hero */}
-      <div className="relative w-full h-[420px] md:h-[520px] lg:h-[580px] overflow-hidden">
+      {/* Banner Hero — with light gradient */}
+      <div className="relative w-full h-[350px] md:h-[450px] lg:h-[520px] overflow-hidden">
         <Image
           src={movie.banner_url || movie.poster_url || "/images/placeholder-banner.jpg"}
           alt={movie.title}
@@ -58,12 +57,26 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/70 to-transparent" />
+        {/* Blurred background effect */}
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/60 to-white/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/90 to-white/20" />
+
+        {/* Back button */}
+        <div className="absolute top-20 left-0 right-0 z-10">
+          <div className="container-app">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-[#131316]/60 hover:text-[#131316] text-sm transition-colors no-underline"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Movie Info */}
-      <div className="container-app -mt-52 md:-mt-56 relative z-10">
+      <div className="container-app -mt-44 md:-mt-52 relative z-10">
         <div className="flex flex-col md:flex-row gap-8 md:gap-10">
           {/* Poster */}
           <motion.div
@@ -72,7 +85,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
             transition={{ duration: 0.5 }}
             className="w-52 md:w-72 shrink-0"
           >
-            <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border-2 border-white/20">
+            <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-[#E8E8EA]">
               <Image
                 src={movie.poster_url || "/images/placeholder-poster.jpg"}
                 alt={movie.title}
@@ -89,74 +102,81 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="flex-1 pt-4 md:pt-8"
           >
-            <h1 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-5 leading-tight">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-[#131316] mb-5 leading-tight">
               {movie.title}
             </h1>
 
             {/* Meta badges */}
             <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-5">
-              <Badge className={getRatingBadge(movie.rating)}>{movie.rating}</Badge>
-              <span className="flex items-center gap-2 text-[15px] text-muted">
-                <Clock className="w-4.5 h-4.5" /> {movie.duration} min
+              <span className="px-3 py-1 rounded-md text-sm font-bold bg-[#131316] text-white">{movie.rating}</span>
+              <span className="flex items-center gap-2 text-[14px] text-[#545459]">
+                <Clock className="w-4 h-4" /> {movie.duration} min
               </span>
-              <span className="flex items-center gap-2 text-[15px] text-muted">
-                <Globe className="w-4.5 h-4.5" /> {movie.language}
+              <span className="flex items-center gap-2 text-[14px] text-[#545459]">
+                <Globe className="w-4 h-4" /> {movie.language}
               </span>
-              <span className="flex items-center gap-2 text-[15px] text-muted">
-                <Calendar className="w-4.5 h-4.5" /> {formatDate(movie.release_date)}
+              <span className="flex items-center gap-2 text-[14px] text-[#545459]">
+                <Calendar className="w-4 h-4" /> {formatDate(movie.release_date)}
               </span>
             </div>
 
             {/* Genre chips */}
-            <div className="flex flex-wrap gap-2.5 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6">
               {movie.genre?.map((g) => (
-                <Badge key={g} variant="outline" className={`text-sm px-3.5 py-1 ${getGenreColor(g)}`}>
+                <span key={g} className="px-3 py-1 rounded-full text-sm font-medium border border-[#E8E8EA] text-[#545459] bg-[#F5F5F6]">
                   {g}
-                </Badge>
+                </span>
               ))}
             </div>
 
             {/* Description */}
-            <p className="text-muted text-base md:text-lg leading-relaxed mb-7 max-w-2xl">
+            <p className="text-[#545459] text-[15px] md:text-base leading-relaxed mb-7 max-w-2xl">
               {movie.description}
             </p>
 
-            {/* Trailer Button */}
-            {movie.trailer_url && (
-              <Button
-                variant="outline"
-                size="lg"
-                className="rounded-full gap-2.5 mb-6 text-base px-8 py-6 hover:bg-accent hover:text-white hover:border-accent transition-all"
-                onClick={() => setTrailerOpen(true)}
-              >
-                <Play className="w-5 h-5 fill-current" />
-                Watch Trailer
-              </Button>
-            )}
+            {/* Trailer + Book Now buttons */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link href="#showtimes">
+                <button className="btn-book">
+                  Book Now
+                </button>
+              </Link>
+              {movie.trailer_url && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-xl gap-2.5 text-[15px] px-8 py-6 border-[#D0D0D4] text-[#545459] hover:bg-[#F5F5F6] hover:text-[#131316] hover:border-[#131316] transition-all"
+                  onClick={() => setTrailerOpen(true)}
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  Watch Trailer
+                </Button>
+              )}
+            </div>
           </motion.div>
         </div>
       </div>
 
       {/* Showtimes Section */}
       <ScrollReveal>
-        <div className="container-app py-14">
-          <Separator className="mb-10" />
-          <h2 className="font-display text-2xl md:text-3xl font-bold mb-8 flex items-center gap-3">
-            <Star className="w-6 h-6 text-gold" />
+        <div id="showtimes" className="container-app py-14">
+          <div className="border-t border-[#E8E8EA] pt-10 mb-8" />
+          <h2 className="text-2xl md:text-3xl font-bold text-[#131316] mb-8 flex items-center gap-3">
+            <Star className="w-6 h-6 text-[#0B70D5]" />
             Select Showtime
           </h2>
 
           {dates.length === 0 ? (
-            <div className="rounded-2xl p-10 text-center bg-[#F8F8FA] border border-[#E5E5EA]">
-              <div className="w-16 h-16 rounded-full bg-[#ECECEE] flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-7 h-7 text-muted" />
+            <div className="rounded-2xl p-10 text-center border border-[#E8E8EA] bg-[#F5F5F6]">
+              <div className="w-16 h-16 rounded-full bg-[#E2F1FE] flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-7 h-7 text-[#0B70D5]" />
               </div>
-              <p className="text-muted text-base">No showtimes available for this movie.</p>
+              <p className="text-[#545459] text-base">No showtimes available for this movie.</p>
             </div>
           ) : (
             <>
               {/* Date Selector */}
-              <div className="flex gap-3 mb-8 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
                 {dates.map((date) => {
                   const d = new Date(date);
                   const isActive = date === activeDate;
@@ -164,16 +184,16 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                     <button
                       key={date}
                       onClick={() => setSelectedDate(date)}
-                      className={`shrink-0 flex flex-col items-center px-6 py-4 rounded-xl border-2 transition-all ${
+                      className={`shrink-0 flex flex-col items-center px-6 py-4 rounded-xl border transition-all ${
                         isActive
-                          ? "bg-accent/10 border-accent text-foreground shadow-md"
-                          : "bg-surface border-border text-muted hover:border-accent/30"
+                          ? "bg-[#E2F1FE] border-[#0B70D5] text-[#0B70D5] shadow-sm"
+                          : "bg-white border-[#E8E8EA] text-[#545459] hover:border-[#D0D0D4] hover:text-[#131316]"
                       }`}
                     >
                       <span className="text-[11px] uppercase tracking-wider font-semibold">
                         {d.toLocaleDateString("en-IN", { weekday: "short" })}
                       </span>
-                      <span className="text-xl font-black mt-0.5">{d.getDate()}</span>
+                      <span className="text-xl font-bold mt-0.5">{d.getDate()}</span>
                       <span className="text-[11px]">
                         {d.toLocaleDateString("en-IN", { month: "short" })}
                       </span>
@@ -195,22 +215,22 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                         key={st.id}
                         href={isFull ? "#" : `/booking/seats?showtime=${st.id}`}
                         onClick={() => !isFull && handleSelectShowtime(st)}
-                        className={`group relative rounded-2xl p-5 border-2 transition-all ${
+                        className={`group relative rounded-2xl p-5 border transition-all no-underline ${
                           isFull
-                            ? "opacity-50 cursor-not-allowed border-border bg-[#F8F8FA]"
-                            : "border-border bg-white hover:border-accent cursor-pointer hover:shadow-lg"
+                            ? "opacity-40 cursor-not-allowed border-[#E8E8EA] bg-[#F5F5F6]"
+                            : "border-[#E8E8EA] bg-white hover:border-[#0B70D5] cursor-pointer hover:shadow-md"
                         }`}
                       >
                         <div className="text-center">
-                          <p className="font-bold text-xl">{formatTime(st.show_time)}</p>
-                          <p className="text-sm text-muted mt-1.5">{st.screen_name}</p>
-                          <p className="text-sm text-gold mt-1 font-semibold">{formatCurrency(st.price)}</p>
-                          <p className={`text-xs mt-2.5 font-medium ${isFull ? "text-danger" : "text-success"}`}>
+                          <p className="font-bold text-xl text-[#131316]">{formatTime(st.show_time)}</p>
+                          <p className="text-sm text-[#8E8E93] mt-1.5">{st.screen_name}</p>
+                          <p className="text-sm text-[#0B70D5] mt-1 font-semibold">{formatCurrency(st.price)}</p>
+                          <p className={`text-xs mt-2.5 font-medium ${isFull ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
                             {isFull ? "Housefull" : `${availableSeats} seats left`}
                           </p>
                         </div>
                         {!isFull && (
-                          <div className="absolute inset-0 rounded-2xl bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="absolute inset-0 rounded-2xl bg-[#0B70D5]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </Link>
                     );
@@ -224,7 +244,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
 
       {/* Trailer Modal */}
       <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-border">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-[#2C2C30]">
           <DialogTitle className="sr-only">Trailer - {movie.title}</DialogTitle>
           <div className="aspect-video">
             {movie.trailer_url && getYouTubeId(movie.trailer_url) ? (
@@ -235,7 +255,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                 allow="autoplay; encrypted-media"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted">
+              <div className="w-full h-full flex items-center justify-center text-white/30">
                 Trailer not available
               </div>
             )}
