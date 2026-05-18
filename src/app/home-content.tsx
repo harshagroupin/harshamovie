@@ -188,20 +188,22 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction >= 0 ? -40 : 40 }}
             transition={{ duration: 0.4 }}
-            className="flex flex-col gap-6 flex-1 pr-8"
+            className="flex flex-col gap-4 lg:gap-5 flex-1 pr-8"
           >
-            <h2 className="text-5xl lg:text-6xl font-extrabold text-[#131316] tracking-tight leading-[1.1] my-0">
+            <h2 className="text-4xl lg:text-[42px] font-bold text-[#131316] tracking-tight leading-[1.2] my-0">
               {movie.title}
             </h2>
-            <span className="text-2xl font-bold text-[#131316]">
+            <span className="text-lg lg:text-xl font-bold text-[#131316]">
               {movie.rating} | {movie.genre?.slice(0, 3).join(", ")}
             </span>
-            <p className="text-lg text-[#131316] max-w-[700px] line-clamp-3 leading-relaxed">
-              {movie.description || "A cinematic experience that will keep you on the edge of your seat. Grab your tickets now to witness the magic on the big screen."}
-            </p>
-            <div>
+            {movie.description && (
+              <p className="text-[15px] lg:text-base text-[#131316] max-w-[700px] line-clamp-3 leading-relaxed">
+                {movie.description}
+              </p>
+            )}
+            <div className="mt-2">
               <Link href={`/movie/${movie.slug}`}>
-                <button className="btn-book text-lg font-bold px-10 py-4 h-auto rounded-2xl">
+                <button className="btn-book text-base font-bold px-8 py-3.5 h-auto rounded-xl">
                   Book now
                 </button>
               </Link>

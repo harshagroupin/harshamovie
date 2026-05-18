@@ -53,14 +53,14 @@ export function ConfirmationContent() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-24 pb-12 bg-white print:pt-0 print:bg-transparent">
+      <div className="min-h-screen pt-24 pb-12 bg-white print:pt-0 print:pb-0 print:min-h-0 print:bg-transparent">
         <div className="container-app max-w-md mx-auto print:max-w-[380px] print:w-full print:p-0">
-          {/* Success Animation */}
+          {/* Success Animation - Hidden on print to save space */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="text-center mb-10 print:mb-4"
+            className="text-center mb-10 print:hidden"
           >
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
@@ -74,7 +74,7 @@ export function ConfirmationContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-3xl md:text-4xl print:text-2xl font-bold text-[#131316] mb-2"
+              className="text-3xl md:text-4xl font-bold text-[#131316] mb-2"
             >
               Booking Confirmed! 🎬
             </motion.h1>

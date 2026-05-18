@@ -62,13 +62,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
         </div>
 
         <div className="container-app relative z-10 pt-6 pb-12 md:pb-16 h-full flex flex-col justify-center min-h-[420px]">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm transition-colors no-underline mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Link>
+
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
             {/* Left Content */}
@@ -100,7 +94,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                 transition={{ delay: 0.2 }}
                 className="text-white/80 text-[14px] md:text-[15px] leading-[1.6] mb-5 max-w-[540px]"
               >
-                {movie.description || "A cinematic experience that will keep you on the edge of your seat. Grab your tickets now to witness the magic on the big screen."}
+                {movie.description}
               </motion.p>
 
               <motion.div 
@@ -263,17 +257,17 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                         <button
                           key={date}
                           onClick={() => setSelectedDate(date)}
-                          className={`shrink-0 flex flex-col items-center px-6 py-4 rounded-xl border transition-all ${
+                          className={`shrink-0 flex flex-col items-center px-4 py-2.5 rounded-lg border transition-all ${
                             isActive
                               ? "bg-[#E2F1FE] border-[#0B70D5] text-[#0B70D5] shadow-sm"
                               : "bg-white border-[#E8E8EA] text-[#545459] hover:border-[#D0D0D4] hover:text-[#131316]"
                           }`}
                         >
-                          <span className="text-[11px] uppercase tracking-wider font-semibold">
+                          <span className="text-[10px] uppercase tracking-wider font-semibold">
                             {d.toLocaleDateString("en-IN", { weekday: "short" })}
                           </span>
-                          <span className="text-xl font-bold mt-0.5">{d.getDate()}</span>
-                          <span className="text-[11px]">
+                          <span className="text-lg font-bold mt-0.5">{d.getDate()}</span>
+                          <span className="text-[10px]">
                             {d.toLocaleDateString("en-IN", { month: "short" })}
                           </span>
                         </button>
@@ -294,22 +288,22 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                             key={st.id}
                             href={isFull ? "#" : `/booking/seats?showtime=${st.id}`}
                             onClick={() => !isFull && handleSelectShowtime(st)}
-                            className={`group relative rounded-2xl p-5 border transition-all no-underline ${
+                            className={`group relative rounded-xl p-3 border transition-all no-underline ${
                               isFull
                                 ? "opacity-40 cursor-not-allowed border-[#E8E8EA] bg-[#F5F5F6]"
-                                : "border-[#E8E8EA] bg-white hover:border-[#0B70D5] cursor-pointer hover:shadow-md"
+                                : "border-[#E8E8EA] bg-white hover:border-[#0B70D5] cursor-pointer hover:shadow-sm"
                             }`}
                           >
                             <div className="text-center">
-                              <p className="font-bold text-xl text-[#131316]">{formatTime(st.show_time)}</p>
-                              <p className="text-sm text-[#8E8E93] mt-1.5">{st.screen_name}</p>
-                              <p className="text-sm text-[#0B70D5] mt-1 font-semibold">{formatCurrency(st.price)}</p>
-                              <p className={`text-xs mt-2.5 font-medium ${isFull ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                              <p className="font-bold text-base text-[#131316]">{formatTime(st.show_time)}</p>
+                              <p className="text-xs text-[#8E8E93] mt-1">{st.screen_name}</p>
+                              <p className="text-xs text-[#0B70D5] mt-0.5 font-semibold">{formatCurrency(st.price)}</p>
+                              <p className={`text-[11px] mt-1.5 font-medium ${isFull ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
                                 {isFull ? "Housefull" : `${availableSeats} seats left`}
                               </p>
                             </div>
                             {!isFull && (
-                              <div className="absolute inset-0 rounded-2xl bg-[#0B70D5]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <div className="absolute inset-0 rounded-xl bg-[#0B70D5]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                             )}
                           </Link>
                         );
