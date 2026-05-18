@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, XCircle, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Search, XCircle, Eye, Ticket, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -13,6 +9,9 @@ import { getBookings, cancelBooking } from "@/actions/bookings";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import type { Booking } from "@/lib/types";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+
+const STATUS_TABS = ["all", "confirmed", "cancelled"];
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -29,7 +28,9 @@ export default function AdminBookingsPage() {
   useEffect(() => { fetchBookings(); }, []);
 
   const filtered = bookings.filter((b) => {
-    const matchSearch = !search || b.booking_id.toLowerCase().includes(search.toLowerCase()) || b.customer_name.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search ||
+      b.booking_id.toLowerCase().includes(search.toLowerCase()) ||
+      b.customer_name.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || b.booking_status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -44,101 +45,231 @@ export default function AdminBookingsPage() {
     } catch { toast.error("Failed to cancel"); }
   };
 
+  const confirmed = bookings.filter(b => b.booking_status === "confirmed").length;
+  const cancelled = bookings.filter(b => b.booking_status === "cancelled").length;
+
   return (
     <PageTransition>
       <div className="space-y-6">
+        {/* Header */}
         <div>
-          <h1 className="font-display text-2xl font-bold">Bookings</h1>
-          <p className="text-muted text-sm mt-1">{bookings.length} total bookings</p>
+          <h1 className="text-2xl font-black text-[#0F1117] tracking-tight">Bookings</h1>
+          <p className="text-[#6B7280] text-sm mt-0.5">{bookings.length} total bookings</p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-            <Input placeholder="Search by ID or customer..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Total", count: bookings.length, textColor: "text-[#111827]", bg: "bg-white border border-[#E5E7EB]" },
+            { label: "Confirmed", count: confirmed, textColor: "text-green-700", bg: "bg-white border border-[#E5E7EB]" },
+            { label: "Cancelled", count: cancelled, textColor: "text-red-600", bg: "bg-white border border-[#E5E7EB]" },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-xl p-4 ${s.bg}`}>
+              <p className="text-xs text-[#6B7280] font-medium">{s.label}</p>
+              <p className={`text-2xl font-black mt-1 ${s.textColor}`}>{s.count}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+            <input
+              type="text"
+              placeholder="Search by ID or customer..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#111827] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#E50914]/40 focus:ring-2 focus:ring-[#E50914]/10 transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <div className="flex gap-2">
-            {["all", "confirmed", "cancelled"].map((s) => (
-              <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className="capitalize">
+          <div className="flex gap-2 bg-white rounded-xl border border-[#E5E7EB] p-1">
+            {STATUS_TABS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
+                  statusFilter === s
+                    ? "bg-[#E50914] text-white shadow-sm"
+                    : "text-[#6B7280] hover:text-[#111827]"
+                }`}
+              >
                 {s}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="w-10 h-10 border-2 border-[#E50914] border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-[#9CA3AF] text-sm">Loading bookings...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] py-20 flex flex-col items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-[#FEF2F2] flex items-center justify-center mb-4">
+              <Ticket className="w-7 h-7 text-[#E50914]" />
+            </div>
+            <h3 className="font-bold text-[#111827] text-base mb-1">No bookings found</h3>
+            <p className="text-[#9CA3AF] text-sm">
+              {search ? `No results for "${search}"` : "Bookings will appear here once made"}
+            </p>
+          </div>
         ) : (
-          <Card className="bg-surface border-border">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-muted font-medium">Booking ID</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium">Customer</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium hidden md:table-cell">Movie</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium hidden sm:table-cell">Seats</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium">Amount</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium">Status</th>
-                      <th className="text-left py-3 px-4 text-muted font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((b) => (
-                      <tr key={b.id} className="border-b border-border/50 hover:bg-surface-light/50">
-                        <td className="py-3 px-4 font-mono text-xs text-accent">{b.booking_id}</td>
-                        <td className="py-3 px-4">{b.customer_name}</td>
-                        <td className="py-3 px-4 hidden md:table-cell text-muted">{(b.showtime as any)?.movie?.title || "N/A"}</td>
-                        <td className="py-3 px-4 hidden sm:table-cell">{(b.selected_seats as string[])?.length || 0}</td>
-                        <td className="py-3 px-4 font-medium">{formatCurrency(b.final_amount)}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant={b.booking_status === "confirmed" ? "success" : "destructive"}>{b.booking_status}</Badge>
-                        </td>
-                        <td className="py-3 px-4 flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelected(b)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden"
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#F9FAFB] border-b border-[#F3F4F6]">
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Booking ID</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Customer</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider hidden md:table-cell">Movie</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider hidden sm:table-cell">Seats</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Amount</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Status</th>
+                    <th className="text-left py-3 px-4 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((b, i) => (
+                    <tr key={b.id} className="border-t border-[#F3F4F6] hover:bg-[#FAFAFA] transition-colors">
+                      <td className="py-3.5 px-4 font-mono text-xs text-[#E50914] font-bold">{b.booking_id}</td>
+                      <td className="py-3.5 px-4 font-medium text-[#111827] text-[13px]">{b.customer_name}</td>
+                      <td className="py-3.5 px-4 hidden md:table-cell text-[#6B7280] text-[13px] capitalize">{(b.showtime as any)?.movie?.title || "N/A"}</td>
+                      <td className="py-3.5 px-4 hidden sm:table-cell">
+                        <span className="px-2 py-0.5 rounded-md bg-[#F3F4F6] text-[#374151] text-xs font-bold">
+                          {(b.selected_seats as string[])?.length || 0}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-[#111827]">{formatCurrency(b.final_amount)}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
+                          b.booking_status === "confirmed"
+                            ? "bg-green-50 text-green-700 border border-green-100"
+                            : "bg-red-50 text-red-600 border border-red-100"
+                        }`}>
+                          {b.booking_status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => setSelected(b)}
+                            className="w-8 h-8 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] flex items-center justify-center transition-colors"
+                            title="View Details"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-[#374151]" />
+                          </button>
                           {b.booking_status === "confirmed" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleCancel(b.id)}>
-                              <XCircle className="w-4 h-4" />
-                            </Button>
+                            <button
+                              onClick={() => handleCancel(b.id)}
+                              className="w-8 h-8 rounded-lg bg-[#F3F4F6] hover:bg-red-50 flex items-center justify-center transition-colors group"
+                              title="Cancel Booking"
+                            >
+                              <XCircle className="w-3.5 h-3.5 text-[#9CA3AF] group-hover:text-[#E50914]" />
+                            </button>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
         )}
 
         {/* Booking Detail Dialog */}
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Booking Details</DialogTitle>
-              <DialogDescription>{selected?.booking_id}</DialogDescription>
+              <DialogTitle className="text-lg font-black text-[#0F1117]">Booking Details</DialogTitle>
+              <DialogDescription className="font-mono text-[#E50914] font-bold text-sm">{selected?.booking_id}</DialogDescription>
             </DialogHeader>
             {selected && (
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-muted">Customer</span><span className="font-medium">{selected.customer_name}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Phone</span><span>{selected.phone}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Email</span><span>{selected.email || "N/A"}</span></div>
-                <Separator />
-                <div className="flex justify-between"><span className="text-muted">Movie</span><span>{(selected.showtime as any)?.movie?.title || "N/A"}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Date</span><span>{selected.showtime?.show_date ? formatDate(selected.showtime.show_date) : "N/A"}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Time</span><span>{selected.showtime?.show_time ? formatTime(selected.showtime.show_time) : "N/A"}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Seats</span><span>{(selected.selected_seats as string[]).join(", ")}</span></div>
-                <Separator />
-                <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatCurrency(selected.subtotal)}</span></div>
-                {selected.discount > 0 && <div className="flex justify-between text-success"><span>Discount</span><span>-{formatCurrency(selected.discount)}</span></div>}
-                <div className="flex justify-between font-bold"><span>Total</span><span className="text-gold">{formatCurrency(selected.final_amount)}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Payment</span><span className="capitalize">{selected.payment_mode}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Status</span><Badge variant={selected.booking_status === "confirmed" ? "success" : "destructive"}>{selected.booking_status}</Badge></div>
+              <div className="space-y-1 text-sm">
+                <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-2.5">
+                  <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-3">Customer Info</p>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Name</span>
+                    <span className="font-semibold text-[#111827]">{selected.customer_name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Phone</span>
+                    <span className="text-[#111827]">{selected.phone}</span>
+                  </div>
+                  {selected.email && (
+                    <div className="flex justify-between">
+                      <span className="text-[#9CA3AF]">Email</span>
+                      <span className="text-[#111827] text-xs">{selected.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-2.5">
+                  <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-3">Show Info</p>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Movie</span>
+                    <span className="font-semibold text-[#111827] capitalize">{(selected.showtime as any)?.movie?.title || "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Date</span>
+                    <span className="text-[#111827]">{selected.showtime?.show_date ? formatDate(selected.showtime.show_date) : "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Time</span>
+                    <span className="text-[#111827]">{selected.showtime?.show_time ? formatTime(selected.showtime.show_time) : "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Seats</span>
+                    <span className="text-[#111827] font-mono text-xs">{(selected.selected_seats as string[]).join(", ")}</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#F9FAFB] rounded-xl p-4 space-y-2.5">
+                  <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-3">Payment</p>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Subtotal</span>
+                    <span className="text-[#111827]">{formatCurrency(selected.subtotal)}</span>
+                  </div>
+                  {selected.discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount</span>
+                      <span>-{formatCurrency(selected.discount)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-black text-base">
+                    <span className="text-[#111827]">Total</span>
+                    <span className="text-[#E50914]">{formatCurrency(selected.final_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#9CA3AF]">Mode</span>
+                    <span className="capitalize text-[#111827]">{selected.payment_mode}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#9CA3AF]">Status</span>
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                      selected.booking_status === "confirmed"
+                        ? "bg-green-50 text-green-700 border border-green-100"
+                        : "bg-red-50 text-red-600 border border-red-100"
+                    }`}>
+                      {selected.booking_status}
+                    </span>
+                  </div>
+                </div>
+
                 {selected.booking_status === "confirmed" && (
-                  <Button variant="destructive" className="w-full mt-4" onClick={() => handleCancel(selected.id)}>Cancel Booking</Button>
+                  <button
+                    onClick={() => handleCancel(selected.id)}
+                    className="w-full py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm border border-red-100 transition-all"
+                  >
+                    Cancel Booking
+                  </button>
                 )}
               </div>
             )}

@@ -26,13 +26,27 @@ export default function AdminLoginPage() {
     }
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       toast.error(error.message);
       setLoading(false);
       return;
     }
+
+    const { data: adminData } = await supabase
+      .from("admins")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (!adminData || adminData.role !== 'admin') {
+      await supabase.auth.signOut();
+      toast.error("Unauthorized: You do not have admin access.");
+      setLoading(false);
+      return;
+    }
+
 
     toast.success("Welcome back, Admin!");
     router.push("/admin");

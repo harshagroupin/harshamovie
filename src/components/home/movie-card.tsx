@@ -55,10 +55,10 @@ export function MovieCard({ movie, variant = "poster", index = 0 }: MovieCardPro
 
           {/* Info below poster */}
           <div className="px-3 py-3 md:px-4 md:py-3.5">
-            <h3 className="font-semibold text-[14px] md:text-[15px] text-[#1A1A2E] leading-snug truncate group-hover:text-[#E50914] transition-colors">
+            <h3 className="font-semibold text-[14px] md:text-[15px] text-[#1A1A2E] leading-snug truncate group-hover:text-[#E50914] transition-colors capitalize">
               {movie.title}
             </h3>
-            <p className="text-xs md:text-[13px] text-[#8E8E93] mt-1 truncate">
+            <p className="text-xs md:text-[13px] text-[#545459] mt-1 truncate">
               {movie.genre?.join(" • ") || movie.language}
             </p>
           </div>

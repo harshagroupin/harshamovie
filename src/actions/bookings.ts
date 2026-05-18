@@ -157,3 +157,14 @@ export async function getRecentBookings(limit: number = 10): Promise<Booking[]> 
   return data || [];
 }
 
+export async function getUserBookings(email: string): Promise<Booking[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*, showtime:showtimes(*, movie:movies(title, poster_url))")
+    .eq("email", email)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+

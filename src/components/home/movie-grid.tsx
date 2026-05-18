@@ -118,7 +118,7 @@ export function MovieGrid({
 
                   {/* Info */}
                   <div className="px-3 py-3">
-                    <h3 className="font-semibold text-[13px] md:text-[14px] text-[#1A1A2E] leading-snug truncate group-hover:text-[#E50914] transition-colors">
+                    <h3 className="font-semibold text-[13px] md:text-[14px] text-[#1A1A2E] leading-snug truncate group-hover:text-[#E50914] transition-colors capitalize">
                       {movie.title}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-1.5">

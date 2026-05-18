@@ -50,8 +50,12 @@ export async function getPromoCodes(): Promise<PromoCode[]> {
   const { data, error } = await supabase
     .from("promo_codes")
     .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
+    .order("code", { ascending: true });
+  if (error) {
+    console.error("getPromoCodes error:", error.code, error.message);
+    // Return empty array on any error rather than crashing the page
+    return [];
+  }
   return data || [];
 }
 

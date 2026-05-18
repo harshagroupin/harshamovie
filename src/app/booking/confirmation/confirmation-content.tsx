@@ -53,14 +53,14 @@ export function ConfirmationContent() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-24 pb-12 bg-white">
-        <div className="container-app max-w-2xl mx-auto">
+      <div className="min-h-screen pt-24 pb-12 bg-white print:pt-0 print:bg-transparent">
+        <div className="container-app max-w-md mx-auto print:max-w-[380px] print:w-full print:p-0">
           {/* Success Animation */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="text-center mb-10"
+            className="text-center mb-10 print:mb-4"
           >
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
@@ -74,7 +74,7 @@ export function ConfirmationContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-3xl md:text-4xl font-bold text-[#131316] mb-2"
+              className="text-3xl md:text-4xl print:text-2xl font-bold text-[#131316] mb-2"
             >
               Booking Confirmed! 🎬
             </motion.h1>
@@ -93,7 +93,7 @@ export function ConfirmationContent() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="glass rounded-2xl overflow-hidden"
+            className="glass rounded-2xl overflow-hidden print:shadow-none print:border print:border-[#E8E8EA]"
           >
             {/* Header — Booking ID */}
             <div className="bg-[#131316] p-6 text-center">
@@ -200,11 +200,12 @@ export function ConfirmationContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="flex flex-col sm:flex-row gap-3 mt-8"
+            className="flex flex-col sm:flex-row gap-3 mt-8 print:hidden"
           >
             <Button
               variant="outline"
               size="lg"
+              onClick={() => window.print()}
               className="flex-1 rounded-xl gap-2 border-[#E8E8EA] text-[#545459] hover:bg-[#F5F5F6] hover:text-[#131316]"
             >
               <Download className="w-4 h-4" /> Download Ticket

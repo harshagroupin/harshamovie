@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, X, MapPin, User } from "lucide-react";
+import { Search, Menu, X, MapPin, User, LogOut } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_TABS = [
   { label: "Hindi", href: "/", active: true },
@@ -18,16 +19,31 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
+  const [user, setUser] = useState<any>(null);
+
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
     <>
       <header
-        className={`sticky top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${
+        className={`print:hidden sticky top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ${
           scrolled
             ? "shadow-[0px_1px_4px_0px_rgba(0,0,0,0.08)]"
             : ""
@@ -92,9 +108,9 @@ export function Navbar() {
           </button>
 
           {/* Profile */}
-          <button className="hidden md:flex w-9 h-9 items-center justify-center rounded-full bg-[#F0F0F2] text-[#545459] hover:bg-[#E0E0E4] transition-all shrink-0">
+          <Link href={user ? "/profile" : "/login"} className="flex w-9 h-9 items-center justify-center rounded-full bg-[#F0F0F2] text-[#545459] hover:bg-[#E0E0E4] transition-all shrink-0 no-underline">
             <User className="w-[18px] h-[18px]" />
-          </button>
+          </Link>
 
           {/* Mobile menu */}
           <button

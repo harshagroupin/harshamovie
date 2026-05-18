@@ -7,9 +7,9 @@ export const APP_URL = "https://harshamovies.vercel.app";
 export const BUSINESS = {
   name: "Harsh A Movie",
   address: "GT Road, Sector 12, Karnal, Haryana 132001",
-  phone: "+91 98765 43210",
+  phone: "+91 8595540725",
   email: "info@harshamovies.in",
-  whatsapp: "919876543210",
+  whatsapp: "918595540725",
   hours: "9:00 AM – 11:00 PM",
   tagline: "Karnal's Ultimate Cinema Destination",
   description: "Experience movies like never before at Karnal's most premium cinema. State-of-the-art screens, immersive Dolby Atmos sound, and luxury recliner seating — your ultimate movie experience awaits.",

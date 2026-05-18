@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import { createBooking } from "@/actions/bookings";
 import { validatePromoCode } from "@/actions/promos";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
 export function CheckoutContent() {
   const router = useRouter();
@@ -36,6 +37,19 @@ export function CheckoutContent() {
   const [promoMessage, setPromoMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        if (user.email) setEmail(user.email);
+        if (user.user_metadata?.full_name) setName(user.user_metadata.full_name);
+        if (user.user_metadata?.phone) setPhone(user.user_metadata.phone);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const subtotal = selectedSeats.length * price;
   let discountAmount = 0;
