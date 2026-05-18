@@ -139,7 +139,7 @@ export default function AdminBookingsPage() {
                     <tr key={b.id} className="border-t border-[#F3F4F6] hover:bg-[#FAFAFA] transition-colors">
                       <td className="py-3.5 px-4 font-mono text-xs text-[#E50914] font-bold">{b.booking_id}</td>
                       <td className="py-3.5 px-4 font-medium text-[#111827] text-[13px]">{b.customer_name}</td>
-                      <td className="py-3.5 px-4 hidden md:table-cell text-[#6B7280] text-[13px] capitalize">{(b.showtime as any)?.movie?.title || "N/A"}</td>
+                      <td className="py-3.5 px-4 hidden md:table-cell text-[#6B7280] text-[13px] capitalize">{((b.showtime as unknown) as { movie?: { title: string } })?.movie?.title || "N/A"}</td>
                       <td className="py-3.5 px-4 hidden sm:table-cell">
                         <span className="px-2 py-0.5 rounded-md bg-[#F3F4F6] text-[#374151] text-xs font-bold">
                           {(b.selected_seats as string[])?.length || 0}
@@ -214,7 +214,7 @@ export default function AdminBookingsPage() {
                   <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-3">Show Info</p>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Movie</span>
-                    <span className="font-semibold text-[#111827] capitalize">{(selected.showtime as any)?.movie?.title || "N/A"}</span>
+                    <span className="font-semibold text-[#111827] capitalize">{((selected.showtime as unknown) as { movie?: { title: string } })?.movie?.title || "N/A"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#9CA3AF]">Date</span>

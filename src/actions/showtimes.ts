@@ -42,7 +42,7 @@ export async function getShowtimeById(id: string): Promise<Showtime | null> {
   }
 }
 
-export async function getAllShowtimes(): Promise<any[]> {
+export async function getAllShowtimes(): Promise<(Showtime & { movie: { title: string } })[]> {
   await verifyAdmin();
   const supabase = createAdminClient();
   const { data, error } = await supabase

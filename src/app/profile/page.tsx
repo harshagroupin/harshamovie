@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { LogOut, Ticket, Calendar, Clock, MapPin } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getUserBookings } from "@/actions/bookings";
 import { PageTransition } from "@/components/shared/page-transition";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatTime, formatCurrency } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 import type { Booking } from "@/lib/types";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,7 +90,7 @@ export default function ProfilePage() {
                   <Ticket className="w-8 h-8 text-[#9CA3AF]" />
                 </div>
                 <h3 className="text-lg font-bold text-[#131316] mb-2">No tickets found</h3>
-                <p className="text-[#545459] mb-6">Looks like you haven't booked any movies yet.</p>
+                <p className="text-[#545459] mb-6">Looks like you haven&apos;t booked any movies yet.</p>
                 <Link href="/">
                   <Button className="bg-[#0B70D5] hover:bg-[#095BB0]">Book a Movie</Button>
                 </Link>
@@ -103,7 +105,7 @@ export default function ProfilePage() {
                         {/* Poster Placeholder or actual poster */}
                         <div className="w-24 h-36 bg-[#F3F4F6] rounded-xl shrink-0 overflow-hidden relative">
                           {movie?.poster_url ? (
-                            <img src={movie.poster_url} alt={movie.title} className="w-full h-full object-cover" />
+                            <Image src={movie.poster_url} alt={movie.title} fill className="object-cover" sizes="96px" />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Ticket className="w-8 h-8 text-[#D1D5DB]" />
