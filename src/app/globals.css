@@ -50,8 +50,8 @@
   --color-gold: #F5A623;
   --color-footer-bg: #1C1C1E;
 
-  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-nunito-sans), "Nunito Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-nunito-sans), "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
 
   --animate-shimmer: shimmer 2s infinite linear;
   --animate-fade-in: fade-in 0.5s ease-out;

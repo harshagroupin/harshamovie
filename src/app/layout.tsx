@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
@@ -11,10 +11,11 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-const beVietnamPro = Be_Vietnam_Pro({
+const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-be-vietnam-pro",
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-nunito-sans",
   display: "swap",
 });
 
@@ -39,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="light" style={{ scrollbarWidth: "none", overscrollBehavior: "none" }}>
-      <body className={`${beVietnamPro.variable} font-sans antialiased bg-background text-foreground`}>
+      <body className={`${nunitoSans.variable} font-sans antialiased bg-background text-foreground`}>
         {children}
         <Toaster
           position="top-right"
