@@ -1,21 +1,135 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Film, Calendar, SlidersHorizontal, ChevronDown } from "lucide-react";
-import type { Movie } from "@/lib/types";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, Film, Calendar, SlidersHorizontal, ChevronDown, X, Check, Ticket, Gift, Sparkles, CreditCard } from "lucide-react";
+import type { Movie, PromoCode } from "@/lib/types";
 import { LANGUAGES } from "@/lib/constants";
+
+const ALL_GENRES = [
+  "Action", "Adventure", "Animation", "Comedy", "Crime", "Devotional", "Documentary",
+  "Drama", "Family", "Fantasy", "Historical", "Horror", "Music", "Musical",
+  "Mystery", "Political", "Romance", "Sci-Fi", "Sport", "Supernatural", "Thriller"
+];
+
+const ALL_LANGUAGES = [
+  "English", "Hindi", "Punjabi", "Malayalam", "Bengali", "Haryanvi", "Bhojpuri", "Tamil", "Odia"
+];
+
+const ALL_FORMATS = [
+  "2D", "4DX-2D", "ICE 2D", "3D", "IMAX 2D", "SCREEN X"
+];
 
 interface HomeContentProps {
   movies: Movie[];
   featuredMovies: Movie[];
+  promoCodes?: PromoCode[];
 }
 
-export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
+export function HomeContent(props: HomeContentProps) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-t-2 border-[#131316] animate-spin" />
+      </div>
+    }>
+      <HomeContentInner {...props} />
+    </Suspense>
+  );
+}
+
+function HomeContentInner({ movies, featuredMovies, promoCodes = [] }: HomeContentProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // URL State parameters
+  const urlSearch = searchParams.get("search") || "";
+  const urlLanguage = searchParams.get("language") || "";
+  const urlTab = searchParams.get("tab") || "";
+
+  // Filter States
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  // Temporary/Local states for the filter modal
+  const [tempGenres, setTempGenres] = useState<string[]>([]);
+  const [tempLanguages, setTempLanguages] = useState<string[]>([]);
+  const [tempFormats, setTempFormats] = useState<string[]>([]);
+  const [activeFilterTab, setActiveFilterTab] = useState<"genre" | "language" | "format">("genre");
+
+  // Sync temp state when opening the modal
+  useEffect(() => {
+    if (isFilterModalOpen) {
+      setTempGenres(selectedGenres);
+      setTempLanguages(selectedLanguages);
+      setTempFormats(selectedFormats);
+    }
+  }, [isFilterModalOpen, selectedGenres, selectedLanguages, selectedFormats]);
+
+  // Generic filter function combining modal and URL filters
+  const filterMovie = useCallback((movie: Movie) => {
+    // 1. URL search query filter (case-insensitive in title/desc/genres)
+    if (urlSearch.trim()) {
+      const q = urlSearch.toLowerCase();
+      const titleMatch = movie.title?.toLowerCase().includes(q);
+      const descMatch = movie.description?.toLowerCase().includes(q);
+      const genreMatch = movie.genre?.some(g => g.toLowerCase().includes(q));
+      if (!titleMatch && !descMatch && !genreMatch) {
+        return false;
+      }
+    }
+
+    // 2. URL language tab filter
+    if (urlLanguage) {
+      if (movie.language?.toLowerCase() !== urlLanguage.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // 3. URL active Tab filters
+    if (urlTab === "foryou") {
+      const isFeatured = movie.is_featured || false;
+      const isHighRating = movie.rating && (movie.rating.includes("13") || movie.rating.includes("16") || movie.rating.includes("18") || movie.rating.includes("A"));
+      if (!isFeatured && !isHighRating) {
+        return false;
+      }
+    }
+
+    // 4. Modal Genre filter
+    if (selectedGenres.length > 0) {
+      if (!movie.genre || !movie.genre.some(g => selectedGenres.includes(g))) {
+        return false;
+      }
+    }
+
+    // 5. Modal Language filter
+    if (selectedLanguages.length > 0) {
+      if (!selectedLanguages.includes(movie.language)) {
+        return false;
+      }
+    }
+
+    // 6. Modal Format filter (smart title/desc matching)
+    if (selectedFormats.length > 0) {
+      const hasMatch = selectedFormats.some(f => {
+        const lFormat = f.toLowerCase();
+        if (lFormat === "2d") return true; // default 2D fits all
+        return movie.title?.toLowerCase().includes(lFormat) || 
+               movie.description?.toLowerCase().includes(lFormat);
+      });
+      if (!hasMatch) return false;
+    }
+
+    return true;
+  }, [selectedGenres, selectedLanguages, selectedFormats, urlSearch, urlLanguage, urlTab]);
 
   const nowShowing = useMemo(
     () =>
@@ -24,43 +138,146 @@ export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
         rel.setHours(0, 0, 0, 0);
         return rel <= today;
       }),
-    [movies]
+    [movies, today]
   );
 
   const upcoming = useMemo(
-    () => movies.filter((m) => new Date(m.release_date) > new Date()),
-    [movies]
-  );
-
-  // Get this week's releases (last 7 days)
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const thisWeekReleases = useMemo(
     () =>
-      nowShowing.filter((m) => {
+      movies.filter((m) => {
         const rel = new Date(m.release_date);
-        return rel >= weekAgo;
-      }).slice(0, 9),
-    [nowShowing]
+        rel.setHours(0, 0, 0, 0);
+        return rel > today;
+      }),
+    [movies, today]
   );
 
-  // Carousel movies — use featured or first 6 showing
-  const carouselMovies = useMemo(
-    () => (featuredMovies.length > 0 ? featuredMovies : nowShowing).slice(0, 6),
-    [featuredMovies, nowShowing]
-  );
+  const thisWeekReleases = useMemo(() => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 7);
+    oneWeekAgo.setHours(0, 0, 0, 0);
+
+    return movies.filter((m) => {
+      const rel = new Date(m.release_date);
+      rel.setHours(0, 0, 0, 0);
+      return rel >= oneWeekAgo && rel <= today;
+    });
+  }, [movies, today]);
+
+  // Apply unified filter logic to compute reactive movie sections
+  const filteredNowShowing = useMemo(() => nowShowing.filter(filterMovie), [nowShowing, filterMovie]);
+  const filteredThisWeekReleases = useMemo(() => thisWeekReleases.filter(filterMovie), [thisWeekReleases, filterMovie]);
+  const filteredUpcoming = useMemo(() => upcoming.filter(filterMovie), [upcoming, filterMovie]);
+  const carouselMovies = useMemo(() => featuredMovies.filter(filterMovie), [featuredMovies, filterMovie]);
+
+  const hasActiveFilters = selectedGenres.length > 0 || selectedLanguages.length > 0 || selectedFormats.length > 0 || urlSearch || urlLanguage || urlTab;
+  const activeFiltersCount = selectedGenres.length + selectedLanguages.length + selectedFormats.length;
+
+  const clearAllFilters = () => {
+    setSelectedGenres([]);
+    setSelectedLanguages([]);
+    setSelectedFormats([]);
+    router.push("/");
+  };
+
+  const handleToggleLanguage = (lang: string) => {
+    setSelectedLanguages(prev => 
+      prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
+    );
+  };
+
+  const handleApplyFilters = () => {
+    setSelectedGenres(tempGenres);
+    setSelectedLanguages(tempLanguages);
+    setSelectedFormats(tempFormats);
+    setIsFilterModalOpen(false);
+  };
+
+  const handleClearModalFilters = () => {
+    setTempGenres([]);
+    setTempLanguages([]);
+    setTempFormats([]);
+  };
 
   return (
     <div className="min-h-screen bg-white">
       {/* ===== HERO CAROUSEL ===== */}
-      {carouselMovies.length > 0 && (
+      {urlTab !== "offers" && carouselMovies.length > 0 && (
         <HeroCarousel movies={carouselMovies} />
       )}
 
       {/* ===== CONTENT ===== */}
       <div className="flex flex-col items-center gap-10 md:gap-[68px] w-full pt-8 md:pt-12 pb-16 md:pb-24">
-        {/* ===== NEW RELEASES ===== */}
-        {thisWeekReleases.length > 0 && (
+        
+        {/* ===== OFFERS DASHBOARD ===== */}
+        {urlTab === "offers" && (
+          <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 animate-fade-in">
+            <div className="mb-8 flex items-center gap-3">
+              <Gift className="w-6 h-6 text-[#E50914]" />
+              <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
+                Exclusive Offers & Promo Codes
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full px-3 sm:px-0">
+              {(!promoCodes || promoCodes.length === 0) ? (
+                <div className="col-span-1 md:col-span-2 py-12 text-center text-[#545459]">
+                  No exclusive offers available at the moment. Please check back later!
+                </div>
+              ) : (
+                promoCodes.map((promo, index) => {
+                  const colors = [
+                    "from-[#1A1A2E] to-[#16213E]", // Dark Blue
+                    "from-[#511F5C] to-[#380E3F]", // Purple
+                    "from-[#0B3C5D] to-[#328CC1]", // Bright Blue
+                    "from-[#131316] to-[#252529]", // Dark Gray
+                  ];
+                  const gradient = colors[index % colors.length];
+
+                  return (
+                    <div key={promo.id} className={`bg-gradient-to-br ${gradient} text-white p-6 rounded-[24px] border border-white/10 shadow-lg flex flex-col justify-between h-[200px] relative overflow-hidden group hover:scale-[1.01] transition-all`}>
+                      <div className="absolute right-[-20px] bottom-[-20px] opacity-10 group-hover:scale-110 transition-all">
+                        <Gift className="w-[180px] h-[180px] text-white" />
+                      </div>
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white text-[12px] font-extrabold uppercase tracking-wider mb-3">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Special Offer
+                        </div>
+                        <h3 className="text-lg font-bold">
+                          {promo.discount_type === "percentage" 
+                            ? `Get Flat ${promo.discount_value}% Off` 
+                            : `Get Flat ₹${promo.discount_value} Off`}
+                        </h3>
+                        <p className="text-sm text-[#D0D0D4] mt-1">Book your tickets now and enjoy amazing discounts on your checkout.</p>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-auto relative z-10">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[12px] text-[#A0A0A4]">Use Code:</span>
+                          <span className="text-[14px] font-mono font-extrabold text-[#0B70D5] bg-white px-2 py-0.5 rounded">{promo.code}</span>
+                        </div>
+                        <button 
+                          className="text-[13px] font-bold text-white hover:underline bg-transparent border-0 cursor-pointer" 
+                          onClick={() => {
+                            navigator.clipboard.writeText(promo.code);
+                            alert(`Promo code ${promo.code} copied!`);
+                          }}
+                        >
+                          Copy Code
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ===== REGULAR MOVIE SECTIONS ===== */}
+        {urlTab !== "offers" && (
+          <>
+            {/* ===== NEW RELEASES ===== */}
+            {filteredThisWeekReleases.length > 0 && (
           <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0">
             <div className="mb-10 md:mb-12">
               <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
@@ -68,7 +285,7 @@ export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
-              {thisWeekReleases.map((movie, i) => (
+              {filteredThisWeekReleases.map((movie, i) => (
                 <MovieCard key={movie.id} movie={movie} index={i} />
               ))}
             </div>
@@ -77,28 +294,135 @@ export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
 
         {/* ===== ONLY IN THEATRES (Now Showing) ===== */}
         <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0">
-
+          <div className="mb-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
+              Only in Theatres
+            </h2>
+          </div>
 
           {/* Filter bar */}
-          <FilterBar />
+          <FilterBar 
+            selectedGenres={selectedGenres}
+            selectedLanguages={selectedLanguages}
+            selectedFormats={selectedFormats}
+            activeFiltersCount={activeFiltersCount}
+            onToggleLanguage={handleToggleLanguage}
+            onOpenModal={() => setIsFilterModalOpen(true)}
+          />
 
-          {nowShowing.length > 0 ? (
+          {/* Active Filter Badges */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-6 animate-fade-in px-3 sm:px-0">
+              {/* URL Search Query Badge */}
+              {urlSearch && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E2F1FE] border border-[#0B70D5]/20 text-[13px] font-bold text-[#0B70D5]">
+                  <span>Search: "{urlSearch}"</span>
+                  <button 
+                    onClick={() => {
+                      const params = new URLSearchParams(window.location.search);
+                      params.delete("search");
+                      router.push(`/?${params.toString()}`);
+                    }} 
+                    className="p-0.5 hover:bg-[#0B70D5]/10 rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#0B70D5]" />
+                  </button>
+                </div>
+              )}
+
+              {/* URL Language Tab Badge */}
+              {urlLanguage && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E2F1FE] border border-[#0B70D5]/20 text-[13px] font-bold text-[#0B70D5]">
+                  <span>Language: {urlLanguage}</span>
+                  <button 
+                    onClick={() => {
+                      const params = new URLSearchParams(window.location.search);
+                      params.delete("language");
+                      router.push(`/?${params.toString()}`);
+                    }} 
+                    className="p-0.5 hover:bg-[#0B70D5]/10 rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#0B70D5]" />
+                  </button>
+                </div>
+              )}
+
+              {/* URL active Tab Badge */}
+              {urlTab && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E2F1FE] border border-[#0B70D5]/20 text-[13px] font-bold text-[#0B70D5]">
+                  <span>{urlTab === "foryou" ? "For You" : "Offers"}</span>
+                  <button 
+                    onClick={() => {
+                      const params = new URLSearchParams(window.location.search);
+                      params.delete("tab");
+                      router.push(`/?${params.toString()}`);
+                    }} 
+                    className="p-0.5 hover:bg-[#0B70D5]/10 rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#0B70D5]" />
+                  </button>
+                </div>
+              )}
+
+              {selectedGenres.map(g => (
+                <div key={g} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F6] border border-[#E8E8EA] text-[13px] font-medium text-[#131316]">
+                  <span>{g}</span>
+                  <button 
+                    onClick={() => setSelectedGenres(selectedGenres.filter(x => x !== g))} 
+                    className="p-0.5 hover:bg-[#E8E8EA] rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#545459]" />
+                  </button>
+                </div>
+              ))}
+              {selectedLanguages.map(l => (
+                <div key={l} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F6] border border-[#E8E8EA] text-[13px] font-medium text-[#131316]">
+                  <span>{l}</span>
+                  <button 
+                    onClick={() => setSelectedLanguages(selectedLanguages.filter(x => x !== l))} 
+                    className="p-0.5 hover:bg-[#E8E8EA] rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#545459]" />
+                  </button>
+                </div>
+              ))}
+              {selectedFormats.map(f => (
+                <div key={f} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5F5F6] border border-[#E8E8EA] text-[13px] font-medium text-[#131316]">
+                  <span>{f}</span>
+                  <button 
+                    onClick={() => setSelectedFormats(selectedFormats.filter(x => x !== f))} 
+                    className="p-0.5 hover:bg-[#E8E8EA] rounded-full transition-colors ml-1 cursor-pointer border-none bg-transparent"
+                  >
+                    <X className="w-3 h-3 text-[#545459]" />
+                  </button>
+                </div>
+              ))}
+              <button 
+                onClick={clearAllFilters}
+                className="text-[13px] font-bold text-[#E50914] hover:text-[#B20710] ml-2 transition-colors cursor-pointer border-none bg-transparent"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
+          {filteredNowShowing.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
-              {nowShowing.map((movie, i) => (
+              {filteredNowShowing.map((movie, i) => (
                 <MovieCard key={movie.id} movie={movie} index={i} />
               ))}
             </div>
           ) : (
             <EmptyState
               icon={<Film className="w-8 h-8 text-[#0B70D5]" />}
-              title="Coming Soon"
-              description="New blockbusters arriving soon. Stay tuned for the latest releases."
+              title="No Movies Found"
+              description="No movies match the selected filters. Try broadening your criteria."
             />
           )}
         </section>
 
         {/* ===== COMING SOON ===== */}
-        {upcoming.length > 0 && (
+        {filteredUpcoming.length > 0 && (
           <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 pb-16">
             <div className="mb-10 md:mb-12">
               <h2 className="text-xl md:text-2xl font-semibold text-[#131316]">
@@ -106,13 +430,191 @@ export function HomeContent({ movies, featuredMovies }: HomeContentProps) {
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 px-3 sm:px-0">
-              {upcoming.map((movie, i) => (
+              {filteredUpcoming.map((movie, i) => (
                 <MovieCard key={movie.id} movie={movie} index={i} variant="upcoming" />
               ))}
             </div>
           </section>
         )}
+          </>
+        )}
       </div>
+
+      {/* ===== FILTER MODAL POPUP ===== */}
+      <AnimatePresence>
+        {isFilterModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsFilterModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.35 }}
+              className="relative w-full max-w-[640px] h-[520px] bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden z-10"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-[#ECECEE] flex items-center justify-between">
+                <h3 className="text-lg font-bold text-[#131316] tracking-tight">Filter by</h3>
+                <button 
+                  onClick={() => setIsFilterModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-[#F5F5F6] flex items-center justify-center text-[#545459] hover:bg-[#E8E8EA] hover:text-[#131316] transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Left Tabs */}
+                <div className="w-[160px] border-r border-[#ECECEE] bg-[#FAFAFA] flex flex-col py-2 shrink-0">
+                  <button
+                    onClick={() => setActiveFilterTab("genre")}
+                    className={`px-6 py-4 text-left text-[14px] font-semibold transition-all relative ${
+                      activeFilterTab === "genre" 
+                        ? "text-[#6444E4] bg-white border-l-[3px] border-[#6444E4]" 
+                        : "text-[#636366] hover:bg-[#F0F0F2]"
+                    }`}
+                  >
+                    Genre
+                  </button>
+                  <button
+                    onClick={() => setActiveFilterTab("language")}
+                    className={`px-6 py-4 text-left text-[14px] font-semibold transition-all relative ${
+                      activeFilterTab === "language" 
+                        ? "text-[#6444E4] bg-white border-l-[3px] border-[#6444E4]" 
+                        : "text-[#636366] hover:bg-[#F0F0F2]"
+                    }`}
+                  >
+                    Language
+                  </button>
+                  <button
+                    onClick={() => setActiveFilterTab("format")}
+                    className={`px-6 py-4 text-left text-[14px] font-semibold transition-all relative ${
+                      activeFilterTab === "format" 
+                        ? "text-[#6444E4] bg-white border-l-[3px] border-[#6444E4]" 
+                        : "text-[#636366] hover:bg-[#F0F0F2]"
+                    }`}
+                  >
+                    Format
+                  </button>
+                </div>
+
+                {/* Right Options List */}
+                <div className="flex-1 p-6 overflow-y-auto bg-white">
+                  {activeFilterTab === "genre" && (
+                    <div className="flex flex-col gap-1.5">
+                      {ALL_GENRES.map((genre) => {
+                        const isChecked = tempGenres.includes(genre);
+                        return (
+                          <div
+                            key={genre}
+                            onClick={() => {
+                              setTempGenres(prev => 
+                                prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
+                              );
+                            }}
+                            className="flex items-center gap-3.5 py-3 px-3.5 rounded-xl hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                          >
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                              isChecked 
+                                ? "bg-[#131316] border-[#131316]" 
+                                : "border-[#C7C7CC] bg-white"
+                            }`}>
+                              {isChecked && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                            </div>
+                            <span className="text-[14px] font-semibold text-[#131316] capitalize">{genre}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeFilterTab === "language" && (
+                    <div className="flex flex-col gap-1.5">
+                      {ALL_LANGUAGES.map((lang) => {
+                        const isChecked = tempLanguages.includes(lang);
+                        return (
+                          <div
+                            key={lang}
+                            onClick={() => {
+                              setTempLanguages(prev => 
+                                prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
+                              );
+                            }}
+                            className="flex items-center gap-3.5 py-3 px-3.5 rounded-xl hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                          >
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                              isChecked 
+                                ? "bg-[#131316] border-[#131316]" 
+                                : "border-[#C7C7CC] bg-white"
+                            }`}>
+                              {isChecked && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                            </div>
+                            <span className="text-[14px] font-semibold text-[#131316] capitalize">{lang}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeFilterTab === "format" && (
+                    <div className="flex flex-col gap-1.5">
+                      {ALL_FORMATS.map((fmt) => {
+                        const isChecked = tempFormats.includes(fmt);
+                        return (
+                          <div
+                            key={fmt}
+                            onClick={() => {
+                              setTempFormats(prev => 
+                                prev.includes(fmt) ? prev.filter(f => f !== fmt) : [...prev, fmt]
+                              );
+                            }}
+                            className="flex items-center gap-3.5 py-3 px-3.5 rounded-xl hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                          >
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                              isChecked 
+                                ? "bg-[#131316] border-[#131316]" 
+                                : "border-[#C7C7CC] bg-white"
+                            }`}>
+                              {isChecked && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                            </div>
+                            <span className="text-[14px] font-semibold text-[#131316] uppercase">{fmt}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Footer */}
+              <div className="px-6 py-4 border-t border-[#ECECEE] flex items-center justify-between bg-white shrink-0">
+                <button
+                  onClick={handleClearModalFilters}
+                  className="text-[14px] font-semibold text-[#8E8E93] hover:text-[#E50914] hover:underline transition-colors cursor-pointer bg-transparent border-0"
+                >
+                  Clear filters
+                </button>
+                <button
+                  onClick={handleApplyFilters}
+                  className="bg-[#131316] text-white text-[14px] font-semibold py-3 px-10 rounded-xl hover:bg-black active:scale-[0.98] transition-all cursor-pointer border-0 shadow-sm"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -124,6 +626,7 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetTimer = useCallback(() => {
+    if (!movies || movies.length === 0) return;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setDirection(1);
@@ -143,18 +646,26 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
   };
 
   const prev = () => {
+    if (!movies || movies.length === 0) return;
     setDirection(-1);
     setCurrent((c) => (c - 1 + movies.length) % movies.length);
     resetTimer();
   };
 
   const next = () => {
+    if (!movies || movies.length === 0) return;
     setDirection(1);
     setCurrent((c) => (c + 1) % movies.length);
     resetTimer();
   };
 
-  const movie = movies[current];  return (
+  if (!movies || movies.length === 0) {
+    return null;
+  }
+
+  // Ensure current index is within bounds (if movies array length changes due to filtering)
+  const safeCurrent = current >= movies.length ? 0 : current;
+  const movie = movies[safeCurrent];  return (
     <section className="relative w-full overflow-hidden bg-[#F8F9FA] md:bg-transparent">
       {/* ===== DESKTOP LAYOUT ===== */}
       <div className="hidden md:flex relative px-4 md:px-12 pt-[32px] pb-2 items-center justify-center w-full min-h-[500px] lg:min-h-[550px] overflow-hidden">
@@ -299,30 +810,60 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
 }
 
 /* ===== FILTER BAR ===== */
-function FilterBar() {
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const filters = ["English", "Hindi", "New Releases", "Re-Releases"];
+interface FilterBarProps {
+  selectedGenres: string[];
+  selectedLanguages: string[];
+  selectedFormats: string[];
+  activeFiltersCount: number;
+  onToggleLanguage: (lang: string) => void;
+  onOpenModal: () => void;
+}
+
+function FilterBar({
+  selectedGenres,
+  selectedLanguages,
+  selectedFormats,
+  activeFiltersCount,
+  onToggleLanguage,
+  onOpenModal,
+}: FilterBarProps) {
+  const quickLanguages = ["English", "Hindi", "Punjabi", "Haryanvi"];
 
   return (
     <div className="w-full py-3 mb-6">
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
         {/* Filters button */}
-        <button className="filter-pill gap-1.5 pl-2.5 ml-3 sm:ml-0">
+        <button 
+          onClick={onOpenModal}
+          className={`filter-pill gap-1.5 pl-2.5 ml-3 sm:ml-0 transition-all ${
+            activeFiltersCount > 0 
+              ? "bg-[#6444E4] border-[#6444E4] text-white font-bold" 
+              : ""
+          }`}
+        >
           <SlidersHorizontal className="w-4 h-4" />
           <span>Filters</span>
-          <ChevronDown className="w-4 h-4 rotate-180" />
+          {activeFiltersCount > 0 && (
+            <span className="ml-1 w-5 h-5 rounded-full bg-white text-[#6444E4] flex items-center justify-center text-[10px] font-extrabold">
+              {activeFiltersCount}
+            </span>
+          )}
+          <ChevronDown className="w-4 h-4" />
         </button>
 
-        {/* Language filters */}
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            onClick={() => setActiveFilter(activeFilter === filter ? null : filter)}
-            className={`filter-pill ${activeFilter === filter ? "active" : ""}`}
-          >
-            {filter}
-          </button>
-        ))}
+        {/* Quick Language filters */}
+        {quickLanguages.map((lang) => {
+          const isActive = selectedLanguages.includes(lang);
+          return (
+            <button
+              key={lang}
+              onClick={() => onToggleLanguage(lang)}
+              className={`filter-pill ${isActive ? "active font-bold" : ""}`}
+            >
+              {lang}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

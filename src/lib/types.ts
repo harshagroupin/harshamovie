@@ -24,8 +24,14 @@ export interface Showtime {
   screen_name: string;
   show_date: string;
   show_time: string;
-  price: number;
+  price: number; // Base price / fallback
+  price_premium: number;
+  price_gold: number;
+  price_recliner: number;
   total_seats: number;
+  seats_premium: number;
+  seats_gold: number;
+  seats_recliner: number;
   booked_seats: string[];
   created_at: string;
   movie?: Movie;
@@ -45,7 +51,7 @@ export interface Booking {
   promo_code_used: string | null;
   payment_mode: "cash";
   payment_status: "completed" | "pending";
-  booking_status: "confirmed" | "cancelled";
+  booking_status: "confirmed" | "cancelled" | "pending";
   created_at: string;
   showtime?: Showtime & { movie?: Movie };
 }
@@ -76,6 +82,9 @@ export interface BookingState {
   showTime: string | null;
   screenName: string | null;
   price: number;
+  price_premium: number;
+  price_gold: number;
+  price_recliner: number;
   selectedSeats: string[];
   customerName: string;
   phone: string;

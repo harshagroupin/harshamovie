@@ -5,6 +5,7 @@ import type { Booking, DashboardStats } from "@/lib/types";
 import { generateBookingId } from "@/lib/utils";
 import { updateBookedSeats } from "./showtimes";
 import { revalidatePath } from "next/cache";
+import { calculateSubtotal } from "@/lib/seat-layouts";
 
 interface CreateBookingInput {
   showtimeId: string;
@@ -23,6 +24,43 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   const bookingId = generateBookingId();
   const supabase = createAdminClient();
 
+  let isAdmin = false;
+  try {
+    await verifyAdmin();
+    isAdmin = true;
+  } catch (e) {
+    isAdmin = false;
+  }
+
+  if (!input.selectedSeats || input.selectedSeats.length === 0) {
+    throw new Error("No seats selected.");
+  }
+
+  // 1. Fetch showtime to validate securely
+  const { data: showtime, error: stError } = await supabase
+    .from("showtimes")
+    .select("*")
+    .eq("id", input.showtimeId)
+    .single();
+
+  if (stError || !showtime) throw new Error("Showtime not found or database is unresponsive.");
+
+  // 2. Validate price securely
+  const expectedSubtotal = calculateSubtotal(input.selectedSeats, showtime.screen_name, {
+    premium: showtime.price_premium,
+    gold: showtime.price_gold,
+    recliner: showtime.price_recliner,
+    base: showtime.price
+  });
+
+  if (input.subtotal < expectedSubtotal) {
+    throw new Error("Invalid booking amount detected. Potential fraud.");
+  }
+
+  // 3. Lock seats first to prevent race conditions and partial bookings
+  await updateBookedSeats(input.showtimeId, input.selectedSeats);
+
+  // 4. Create the booking record
   const { data, error } = await supabase
     .from("bookings")
     .insert([{
@@ -32,20 +70,24 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       phone: input.phone,
       email: input.email,
       selected_seats: input.selectedSeats,
-      subtotal: input.subtotal,
+      subtotal: input.subtotal, // Could use expectedSubtotal here, but trusting UI calculated subtotal if valid
       discount: input.discount,
       final_amount: input.finalAmount,
       promo_code_used: input.promoCodeUsed,
       payment_mode: input.paymentMode,
-      payment_status: "completed",
-      booking_status: "confirmed",
+      payment_status: isAdmin ? "completed" : "pending",
+      booking_status: isAdmin ? "confirmed" : "pending",
     }])
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
-
-  await updateBookedSeats(input.showtimeId, input.selectedSeats);
+  if (error) {
+    // Rollback: unlock the seats
+    const currentBooked = (showtime.booked_seats as string[]) || [];
+    const updatedSeats = currentBooked.filter((s) => !input.selectedSeats.includes(s));
+    await supabase.from("showtimes").update({ booked_seats: updatedSeats }).eq("id", input.showtimeId);
+    throw new Error(error.message);
+  }
 
   if (input.promoCodeUsed) {
     const { error: promoError } = await supabase.rpc("increment_promo_usage", {
@@ -59,6 +101,17 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 
   revalidatePath("/", "layout");
   return data;
+}
+
+export async function approveBooking(id: string): Promise<void> {
+  await verifyAdmin();
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("bookings")
+    .update({ booking_status: "confirmed", payment_status: "completed" })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }
 
 export async function getBookings(): Promise<Booking[]> {

@@ -5,13 +5,14 @@ import { Search, XCircle, Eye, Ticket, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { PageTransition } from "@/components/shared/page-transition";
-import { getBookings, cancelBooking } from "@/actions/bookings";
+import { getBookings, cancelBooking, approveBooking } from "@/actions/bookings";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import type { Booking } from "@/lib/types";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
-const STATUS_TABS = ["all", "confirmed", "cancelled"];
+const STATUS_TABS = ["all", "pending", "confirmed", "cancelled"];
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -30,7 +31,9 @@ export default function AdminBookingsPage() {
   const filtered = bookings.filter((b) => {
     const matchSearch = !search ||
       b.booking_id.toLowerCase().includes(search.toLowerCase()) ||
-      b.customer_name.toLowerCase().includes(search.toLowerCase());
+      b.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+      b.phone.includes(search) ||
+      (b.email && b.email.toLowerCase().includes(search.toLowerCase()));
     const matchStatus = statusFilter === "all" || b.booking_status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -45,6 +48,17 @@ export default function AdminBookingsPage() {
     } catch { toast.error("Failed to cancel"); }
   };
 
+  const handleApprove = async (id: string) => {
+    if (!confirm("Approve this booking? Payment status will be marked as completed.")) return;
+    try {
+      await approveBooking(id);
+      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, booking_status: "confirmed" as const, payment_status: "completed" as const } : b));
+      setSelected(null);
+      toast.success("Booking approved");
+    } catch { toast.error("Failed to approve"); }
+  };
+
+  const pending = bookings.filter(b => b.booking_status === "pending").length;
   const confirmed = bookings.filter(b => b.booking_status === "confirmed").length;
   const cancelled = bookings.filter(b => b.booking_status === "cancelled").length;
 
@@ -52,15 +66,21 @@ export default function AdminBookingsPage() {
     <PageTransition>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-black text-[#0F1117] tracking-tight">Bookings</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">{bookings.length} total bookings</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-[#0F1117] tracking-tight">Bookings</h1>
+            <p className="text-[#6B7280] text-sm mt-0.5">{bookings.length} total bookings</p>
+          </div>
+          <Link href="/admin/bookings/new" className="bg-[#E50914] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-red-700 transition-colors inline-flex items-center gap-2 w-fit">
+            <Ticket className="w-4 h-4" />
+            Create Ticket
+          </Link>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total", count: bookings.length, textColor: "text-[#111827]", bg: "bg-white border border-[#E5E7EB]" },
+            { label: "Pending", count: pending, textColor: "text-amber-600", bg: "bg-white border border-[#E5E7EB]" },
             { label: "Confirmed", count: confirmed, textColor: "text-green-700", bg: "bg-white border border-[#E5E7EB]" },
             { label: "Cancelled", count: cancelled, textColor: "text-red-600", bg: "bg-white border border-[#E5E7EB]" },
           ].map((s) => (
@@ -77,7 +97,7 @@ export default function AdminBookingsPage() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
             <input
               type="text"
-              placeholder="Search by ID or customer..."
+              placeholder="Search by ID, Name, Phone or Email..."
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#111827] text-sm placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#E50914]/40 focus:ring-2 focus:ring-[#E50914]/10 transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -150,7 +170,9 @@ export default function AdminBookingsPage() {
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${
                           b.booking_status === "confirmed"
                             ? "bg-green-50 text-green-700 border border-green-100"
-                            : "bg-red-50 text-red-600 border border-red-100"
+                            : b.booking_status === "pending"
+                              ? "bg-amber-50 text-amber-700 border border-amber-100"
+                              : "bg-red-50 text-red-600 border border-red-100"
                         }`}>
                           {b.booking_status}
                         </span>
@@ -171,6 +193,15 @@ export default function AdminBookingsPage() {
                               title="Cancel Booking"
                             >
                               <XCircle className="w-3.5 h-3.5 text-[#9CA3AF] group-hover:text-[#E50914]" />
+                            </button>
+                          )}
+                          {b.booking_status === "pending" && (
+                            <button
+                              onClick={() => handleApprove(b.id)}
+                              className="w-8 h-8 rounded-lg bg-[#F3F4F6] hover:bg-green-50 flex items-center justify-center transition-colors group"
+                              title="Approve Booking"
+                            >
+                              <Ticket className="w-3.5 h-3.5 text-[#9CA3AF] group-hover:text-green-600" />
                             </button>
                           )}
                         </div>
@@ -256,17 +287,35 @@ export default function AdminBookingsPage() {
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                       selected.booking_status === "confirmed"
                         ? "bg-green-50 text-green-700 border border-green-100"
-                        : "bg-red-50 text-red-600 border border-red-100"
+                        : selected.booking_status === "pending"
+                          ? "bg-amber-50 text-amber-700 border border-amber-100"
+                          : "bg-red-50 text-red-600 border border-red-100"
                     }`}>
                       {selected.booking_status}
                     </span>
                   </div>
                 </div>
 
+                {selected.booking_status === "pending" && (
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => handleApprove(selected.id)}
+                      className="flex-1 py-3 rounded-xl bg-green-50 hover:bg-green-100 text-green-700 font-bold text-sm border border-green-100 transition-all"
+                    >
+                      Approve Booking
+                    </button>
+                    <button
+                      onClick={() => handleCancel(selected.id)}
+                      className="flex-1 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm border border-red-100 transition-all"
+                    >
+                      Cancel / Reject
+                    </button>
+                  </div>
+                )}
                 {selected.booking_status === "confirmed" && (
                   <button
                     onClick={() => handleCancel(selected.id)}
-                    className="w-full py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm border border-red-100 transition-all"
+                    className="w-full py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm border border-red-100 transition-all mt-2"
                   >
                     Cancel Booking
                   </button>

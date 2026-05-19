@@ -59,6 +59,20 @@ export async function getPromoCodes(): Promise<PromoCode[]> {
   return data || [];
 }
 
+export async function getActivePromoCodes(): Promise<PromoCode[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("promo_codes")
+    .select("*")
+    .eq("is_active", true)
+    .order("code", { ascending: true });
+  if (error) {
+    console.error("getActivePromoCodes error:", error.code, error.message);
+    return [];
+  }
+  return data || [];
+}
+
 export async function createPromoCode(promo: Partial<PromoCode>): Promise<PromoCode> {
   await verifyAdmin();
   const supabase = createAdminClient();

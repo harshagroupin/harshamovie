@@ -54,4 +54,4 @@ export const LANGUAGES = [
 
 export const RATINGS = ["U", "UA", "A", "S"];
 
-export const SCREENS = ["Screen 1", "Screen 2", "Audi 1", "IMAX"];
+export const SCREENS = ["Audi 1", "Audi 2", "Audi 3"];

@@ -27,6 +27,7 @@ export function CheckoutContent() {
     promoCode, discount, discountType,
     paymentMode,
     setCustomerInfo, setPromo, clearPromo, setPaymentMode,
+    getSubtotal, getFinalAmount
   } = store;
 
   const [name, setName] = useState("");
@@ -51,14 +52,9 @@ export function CheckoutContent() {
     fetchUser();
   }, []);
 
-  const subtotal = selectedSeats.length * price;
-  let discountAmount = 0;
-  if (discount && discountType === "percentage") {
-    discountAmount = (subtotal * discount) / 100;
-  } else if (discount && discountType === "fixed") {
-    discountAmount = discount;
-  }
-  const finalAmount = Math.max(0, subtotal - discountAmount);
+  const subtotal = getSubtotal();
+  const finalAmount = getFinalAmount();
+  let discountAmount = subtotal - finalAmount;
 
   if (!showtimeId || selectedSeats.length === 0) {
     return (
@@ -119,15 +115,16 @@ export function CheckoutContent() {
 
       toast.success("Booking confirmed!");
       router.push(`/booking/confirmation?id=${booking.booking_id}`);
-    } catch (err: any) {
-      toast.error(err.message || "Booking failed. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Booking failed. Please try again.";
+      toast.error(errorMessage);
       setSubmitting(false);
     }
   };
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-20 pb-12 bg-white">
+      <div className="min-h-screen pt-4 pb-12 bg-white">
         <div className="container-app">
           <button onClick={() => router.back()} className="flex items-center gap-2 text-[#8E8E93] hover:text-[#131316] transition-colors mb-8 text-sm">
             <ArrowLeft className="w-4 h-4" /> Back to Seats

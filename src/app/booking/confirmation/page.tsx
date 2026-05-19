@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ConfirmationContent } from "./confirmation-content";
 
-export const metadata = { title: "Booking Confirmed" };
+export const metadata = { title: "Booking Status" };
 
 export default function ConfirmationPage() {
   return (

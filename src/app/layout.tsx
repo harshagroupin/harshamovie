@@ -26,6 +26,14 @@ export const metadata: Metadata = {
   },
   description: APP_DESCRIPTION,
   keywords: ["movie tickets", "cinema booking", "Harsha Movies Karnal", "movie theater", "book tickets online", "Karnal cinema"],
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest',
   openGraph: {
     title: APP_NAME,
     description: APP_DESCRIPTION,

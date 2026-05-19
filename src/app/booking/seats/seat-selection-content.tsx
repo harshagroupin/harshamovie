@@ -9,10 +9,11 @@ import { ArrowLeft, Monitor, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
-import { formatCurrency, formatDate, formatTime, getSeatId, getRowLabel } from "@/lib/utils";
-import { ROWS, COLS } from "@/lib/constants";
+import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Showtime } from "@/lib/types";
+
+import { SCREEN_LAYOUTS, AUDI_1 } from "@/lib/seat-layouts";
 
 export function SeatSelectionContent() {
   const searchParams = useSearchParams();
@@ -20,9 +21,9 @@ export function SeatSelectionContent() {
   const showtimeId = searchParams.get("showtime");
 
   const {
-    movieTitle, moviePoster, selectedSeats, price,
+    movieTitle, moviePoster, selectedSeats, price_premium, price_gold, price_recliner,
     showDate, showTime, screenName,
-    toggleSeat, setMovie, setShowtime: setStoreShowtime,
+    toggleSeat, setMovie, setShowtime: setStoreShowtime, getSubtotal
   } = useBookingStore();
 
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
@@ -70,41 +71,77 @@ export function SeatSelectionContent() {
     );
   }
 
-  const subtotal = selectedSeats.length * price;
+  const layout = SCREEN_LAYOUTS[screenName || "Audi 1"] || AUDI_1;
+
+  const subtotalValue = getSubtotal();
+
+  // Group layout by tiers for visual separation
+  const tiers = [
+    { tier: 'premium', label: 'Premium', price: price_premium },
+    { tier: 'gold', label: 'Gold', price: price_gold },
+    { tier: 'recliner', label: 'Recliner', price: price_recliner }
+  ];
 
   return (
     <PageTransition>
-      <div className="min-h-screen pt-20 pb-12 bg-white">
+      <div className="min-h-screen pt-4 pb-12 bg-white">
         <div className="container-app">
-          {/* Back */}
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-[#8E8E93] hover:text-[#131316] transition-colors mb-8 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Seat Map — 2 cols */}
-            <div className="lg:col-span-2">
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-[#F8F9FA] border border-[#E8E8EA] p-5 md:p-6 rounded-2xl mb-10 shadow-sm">
-                {moviePoster && (
-                  <div className="relative w-24 h-36 md:w-28 md:h-40 rounded-xl overflow-hidden shrink-0 shadow-md border border-[#E8E8EA]">
-                    <Image src={moviePoster} alt={movieTitle || ""} fill className="object-cover" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#131316] mb-4">{movieTitle || "Select Your Seats"}</h1>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-[#545459]">
-                    <span className="flex items-center gap-2 font-medium bg-white px-3.5 py-2 rounded-xl border border-[#E8E8EA] shadow-sm">
-                      <Calendar className="w-4 h-4 text-[#0B70D5]" /> {showDate ? formatDate(showDate) : "Select Date"}
-                    </span>
-                    <span className="flex items-center gap-2 font-medium bg-white px-3.5 py-2 rounded-xl border border-[#E8E8EA] shadow-sm">
-                      <Clock className="w-4 h-4 text-[#0B70D5]" /> {showTime ? formatTime(showTime) : "Select Time"}
-                    </span>
-                    <span className="flex items-center gap-2 font-medium bg-white px-3.5 py-2 rounded-xl border border-[#E8E8EA] shadow-sm">
-                      <Monitor className="w-4 h-4 text-[#0B70D5]" /> {screenName || "Select Screen"}
-                    </span>
-                  </div>
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between bg-[#F8F9FA] border border-[#E8E8EA] p-5 md:p-6 rounded-2xl mb-10 shadow-sm">
+            {/* Left: Movie Info */}
+            <div className="flex gap-5 items-center">
+              {moviePoster && (
+                <div className="relative w-20 h-28 rounded-xl overflow-hidden shrink-0 shadow-md border border-[#E8E8EA]">
+                  <Image src={moviePoster} alt={movieTitle || ""} fill className="object-cover" />
+                </div>
+              )}
+              <div>
+                <h1 className="text-2xl font-bold text-[#131316] mb-3">{movieTitle || "Select Your Seats"}</h1>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-[#545459]">
+                  <span className="flex items-center gap-1.5 font-medium bg-white px-3 py-1.5 rounded-lg border border-[#E8E8EA] shadow-sm">
+                    <Calendar className="w-3.5 h-3.5 text-[#0B70D5]" /> {showDate ? formatDate(showDate) : "Select Date"}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium bg-white px-3 py-1.5 rounded-lg border border-[#E8E8EA] shadow-sm">
+                    <Clock className="w-3.5 h-3.5 text-[#0B70D5]" /> {showTime ? formatTime(showTime) : "Select Time"}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium bg-white px-3 py-1.5 rounded-lg border border-[#E8E8EA] shadow-sm">
+                    <Monitor className="w-3.5 h-3.5 text-[#0B70D5]" /> {screenName || "Select Screen"}
+                  </span>
                 </div>
               </div>
+            </div>
+
+            {/* Right: Booking Summary inline */}
+            <div className="w-full lg:w-auto flex flex-col sm:flex-row items-center gap-4 lg:gap-6 bg-white p-4 rounded-xl border border-[#E8E8EA] shadow-sm">
+              <div className="w-full sm:w-auto flex flex-col gap-1 min-w-[120px]">
+                <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider">Seats ({selectedSeats.length})</span>
+                <div className="flex flex-wrap gap-1 min-h-[24px] items-center">
+                  {selectedSeats.length > 0 ? (
+                    selectedSeats.sort().map((seat) => (
+                      <span key={seat} className="px-1.5 py-0.5 text-[11px] font-mono rounded bg-[#E2F1FE] text-[#0B70D5] font-semibold border border-[#0B70D5]/20">
+                        {seat}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-[#8E8E93]">None</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="w-full sm:w-auto flex flex-col gap-1 sm:pl-4 sm:border-l border-[#E8E8EA]">
+                <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider">Subtotal</span>
+                <span className="text-lg font-bold text-[#0B70D5]">{formatCurrency(subtotalValue)}</span>
+              </div>
+
+              <Link href={selectedSeats.length > 0 ? "/booking/checkout" : "#"} className="w-full sm:w-auto">
+                <Button
+                  className="w-full sm:w-auto rounded-xl bg-[#131316] text-white font-bold py-5 hover:bg-[#2C2C30] transition-all px-8"
+                  disabled={selectedSeats.length === 0}
+                >
+                  Checkout
+                </Button>
+              </Link>
+            </div>
+          </div>
 
               {/* Screen */}
               <div className="text-center mb-10">
@@ -116,41 +153,66 @@ export function SeatSelectionContent() {
               </div>
 
               {/* Seat Grid */}
-              <div className="flex flex-col items-center gap-2 mb-10 overflow-x-auto px-4">
-                {Array.from({ length: ROWS }).map((_, row) => (
-                  <div key={row} className="flex items-center gap-2">
-                    <span className="w-6 text-[11px] text-[#8E8E93] text-right font-mono">
-                      {getRowLabel(row)}
-                    </span>
-                    <div className="flex gap-1.5">
-                      {Array.from({ length: COLS }).map((_, col) => {
-                        const seatId = getSeatId(row, col);
-                        const isBooked = bookedSeats.includes(seatId);
-                        const isSelected = selectedSeats.includes(seatId);
+              <div className="flex flex-col items-center gap-2 mb-10 overflow-x-auto px-4 pb-4">
+                {tiers.map(({ tier, label, price }) => {
+                  const tierRows = layout.filter(r => r.tier === tier);
+                  if (tierRows.length === 0) return null;
 
-                        let seatClass = "seat seat-available";
-                        if (isBooked) seatClass = "seat seat-booked";
-                        else if (isSelected) seatClass = "seat seat-selected";
+                  return (
+                    <div key={tier} className="mb-6 w-full flex flex-col items-center">
+                      <div className="text-[11px] font-bold text-[#8E8E93] uppercase tracking-widest mb-4 border-b border-[#E8E8EA] pb-1">
+                        {label} - {formatCurrency(price)}
+                      </div>
+                      
+                      {tierRows.map((row) => (
+                        <div key={row.id} className="flex items-center gap-3 mb-2">
+                          <span className="w-4 text-[11px] text-[#131316] text-right font-mono font-bold">
+                            {row.id}
+                          </span>
+                          
+                          <div className="flex gap-1.5 justify-center">
+                            {row.seats.map((seatId, idx) => {
+                              if (seatId === null) {
+                                return <div key={`gap-${row.id}-${idx}`} className="w-7 h-7" />;
+                              }
 
-                        return (
-                          <motion.button
-                            key={seatId}
-                            className={seatClass}
-                            onClick={() => !isBooked && toggleSeat(seatId)}
-                            whileTap={!isBooked ? { scale: 0.9 } : undefined}
-                            disabled={isBooked}
-                            title={isBooked ? "Already booked" : seatId}
-                          >
-                            {col + 1}
-                          </motion.button>
-                        );
-                      })}
+                              const isBooked = bookedSeats.includes(seatId);
+                              const isSelected = selectedSeats.includes(seatId);
+
+                              let seatClass = "seat seat-available flex items-center justify-center text-[10px] font-mono transition-all duration-200";
+                              if (isBooked) seatClass = "seat seat-booked flex items-center justify-center text-[10px] font-mono text-[#8E8E93]";
+                              else if (isSelected) seatClass = "seat seat-selected flex items-center justify-center text-[10px] font-mono font-bold text-white shadow-md transform scale-110";
+                              
+                              if (tier === "recliner" && !isSelected && !isBooked) {
+                                seatClass += " border-[#0B70D5]/40 text-[#0B70D5]";
+                              }
+
+                              const seatNum = seatId.split('-')[1];
+
+                              return (
+                                <motion.button
+                                  key={seatId}
+                                  className={seatClass}
+                                  onClick={() => !isBooked && toggleSeat(seatId)}
+                                  whileHover={!isBooked && !isSelected ? { scale: 1.1 } : undefined}
+                                  whileTap={!isBooked ? { scale: 0.95 } : undefined}
+                                  disabled={isBooked}
+                                  title={isBooked ? "Already booked" : `${seatId} - ${formatCurrency(price)}`}
+                                >
+                                  {isBooked ? "×" : seatNum}
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                          
+                          <span className="w-4 text-[11px] text-[#131316] font-mono font-bold">
+                            {row.id}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <span className="w-6 text-[11px] text-[#8E8E93] font-mono">
-                      {getRowLabel(row)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Legend */}
@@ -168,81 +230,6 @@ export function SeatSelectionContent() {
                   <span>Booked</span>
                 </div>
               </div>
-            </div>
-
-            {/* Sidebar Summary */}
-            <div className="lg:col-span-1">
-              <div className="glass rounded-2xl p-6 sticky top-20">
-                <h3 className="font-bold text-lg text-[#131316] mb-5">Booking Summary</h3>
-                <div className="border-t border-[#E8E8EA] pt-4 mb-4" />
-
-                {/* Movie info */}
-                {moviePoster && (
-                  <div className="flex gap-3 mb-5">
-                    <div className="relative w-14 h-20 rounded-lg overflow-hidden shrink-0 border border-[#E8E8EA]">
-                      <Image src={moviePoster} alt={movieTitle || ""} fill className="object-cover" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[#131316]">{movieTitle}</p>
-                      <p className="text-[12px] text-[#8E8E93] mt-1">{showDate && formatDate(showDate)}</p>
-                      <p className="text-[12px] text-[#8E8E93]">{showTime && formatTime(showTime)}</p>
-                      <p className="text-[12px] text-[#0B70D5] mt-1 font-medium">{screenName}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="border-t border-[#E8E8EA] pt-4 mb-4" />
-
-                {/* Selected seats */}
-                <div className="mb-5">
-                  <p className="text-[12px] text-[#8E8E93] mb-2 uppercase tracking-wider font-semibold">
-                    Seats ({selectedSeats.length})
-                  </p>
-                  {selectedSeats.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedSeats.sort().map((seat) => (
-                        <span key={seat} className="px-2.5 py-1 text-[11px] font-mono rounded-md bg-[#E2F1FE] text-[#0B70D5] border border-[#0B70D5]/20 font-semibold">
-                          {seat}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[12px] text-[#8E8E93]">Tap seats to select</p>
-                  )}
-                </div>
-
-                <div className="border-t border-[#E8E8EA] pt-4 mb-5" />
-
-                {/* Price */}
-                <div className="space-y-2.5 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#8E8E93]">Per seat</span>
-                    <span className="text-[#545459]">{formatCurrency(price)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#8E8E93]">Seats</span>
-                    <span className="text-[#545459]">× {selectedSeats.length}</span>
-                  </div>
-                  <div className="border-t border-[#E8E8EA] pt-2.5" />
-                  <div className="flex justify-between font-bold">
-                    <span className="text-[#131316]">Subtotal</span>
-                    <span className="text-[#0B70D5] text-lg">{formatCurrency(subtotal)}</span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <Link href={selectedSeats.length > 0 ? "/booking/checkout" : "#"}>
-                  <Button
-                    size="lg"
-                    className="w-full rounded-xl bg-[#131316] text-white font-bold text-[15px] py-6 hover:bg-[#2C2C30] transition-all"
-                    disabled={selectedSeats.length === 0}
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </PageTransition>

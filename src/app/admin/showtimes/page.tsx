@@ -24,16 +24,40 @@ export default function AdminShowtimesPage() {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [entries, setEntries] = useState([{ date: new Date().toISOString().split("T")[0], time: "14:00" }]);
+
+  const SCREEN_SEATS = {
+    "Audi 1": { premium: 161, gold: 95, recliner: 27 },
+    "Audi 2": { premium: 32, gold: 118, recliner: 17 },
+    "Audi 3": { premium: 0, gold: 116, recliner: 0 },
+  };
   const [form, setForm] = useState({
     movie_id: "",
-    screen_name: "Screen 1",
-    price: "200",
+    screen_name: "Audi 1",
+    price: "0",
+    price_premium: "",
+    price_gold: "",
+    price_recliner: "",
     total_seats: "100",
+    seats_premium: "",
+    seats_gold: "",
+    seats_recliner: "",
   });
 
   const handleOpenCreate = () => {
     setEditingId(null);
-    setForm({ movie_id: "", screen_name: "Screen 1", price: "200", total_seats: "100" });
+    const defaultSeats = SCREEN_SEATS["Audi 1"];
+    setForm({ 
+      movie_id: "", 
+      screen_name: "Audi 1", 
+      price: "0", 
+      price_premium: "", 
+      price_gold: "", 
+      price_recliner: "", 
+      total_seats: (defaultSeats.premium + defaultSeats.gold + defaultSeats.recliner).toString(), 
+      seats_premium: defaultSeats.premium.toString(), 
+      seats_gold: defaultSeats.gold.toString(), 
+      seats_recliner: defaultSeats.recliner.toString() 
+    });
     setEntries([{ date: new Date().toISOString().split("T")[0], time: "14:00" }]);
     setDialogOpen(true);
   };
@@ -43,12 +67,33 @@ export default function AdminShowtimesPage() {
     setForm({
       movie_id: st.movie_id,
       screen_name: st.screen_name,
-      price: st.price.toString(),
-      total_seats: st.total_seats.toString()
+      price: st.price ? st.price.toString() : "0",
+      price_premium: st.price_premium ? st.price_premium.toString() : "",
+      price_gold: st.price_gold ? st.price_gold.toString() : "",
+      price_recliner: st.price_recliner ? st.price_recliner.toString() : "",
+      total_seats: st.total_seats.toString(),
+      seats_premium: st.seats_premium ? st.seats_premium.toString() : "",
+      seats_gold: st.seats_gold ? st.seats_gold.toString() : "",
+      seats_recliner: st.seats_recliner ? st.seats_recliner.toString() : "",
     });
     setEntries([{ date: st.show_date, time: st.show_time }]);
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    const p = parseInt(form.seats_premium) || 0;
+    const g = parseInt(form.seats_gold) || 0;
+    const r = parseInt(form.seats_recliner) || 0;
+    const total = p + g + r;
+    if (form.seats_premium !== "" || form.seats_gold !== "" || form.seats_recliner !== "") {
+      setForm((prev) => {
+        if (prev.total_seats !== total.toString()) {
+          return { ...prev, total_seats: total.toString() };
+        }
+        return prev;
+      });
+    }
+  }, [form.seats_premium, form.seats_gold, form.seats_recliner]);
 
   const fetchData = async () => {
     try {
@@ -70,6 +115,15 @@ export default function AdminShowtimesPage() {
   const handleSubmit = async () => {
     if (!form.movie_id) { toast.error("Select a movie"); return; }
     if (entries.length === 0) { toast.error("Please add at least one date and time"); return; }
+    
+    const pSeats = parseInt(form.seats_premium) || 0;
+    const gSeats = parseInt(form.seats_gold) || 0;
+    const rSeats = parseInt(form.seats_recliner) || 0;
+
+    if (pSeats > 0 && !form.price_premium) { toast.error("Please fill Premium price"); return; }
+    if (gSeats > 0 && !form.price_gold) { toast.error("Please fill Gold price"); return; }
+    if (rSeats > 0 && !form.price_recliner) { toast.error("Please fill Recliner price"); return; }
+    
     for (const e of entries) {
       if (!e.date || !e.time) { toast.error("All date and time fields must be filled"); return; }
     }
@@ -82,8 +136,14 @@ export default function AdminShowtimesPage() {
           screen_name: form.screen_name,
           show_date: entries[0].date,
           show_time: entries[0].time,
-          price: parseFloat(form.price),
-          total_seats: parseInt(form.total_seats),
+          price: 0,
+          price_premium: pSeats > 0 ? parseFloat(form.price_premium) : 0,
+          price_gold: gSeats > 0 ? parseFloat(form.price_gold) : 0,
+          price_recliner: rSeats > 0 ? parseFloat(form.price_recliner) : 0,
+          total_seats: parseInt(form.total_seats) || 0,
+          seats_premium: pSeats,
+          seats_gold: gSeats,
+          seats_recliner: rSeats,
         });
         toast.success("Showtime updated!");
       } else {
@@ -92,8 +152,14 @@ export default function AdminShowtimesPage() {
           screen_name: form.screen_name,
           show_date: e.date,
           show_time: e.time,
-          price: parseFloat(form.price),
-          total_seats: parseInt(form.total_seats),
+          price: 0,
+          price_premium: pSeats > 0 ? parseFloat(form.price_premium) : 0,
+          price_gold: gSeats > 0 ? parseFloat(form.price_gold) : 0,
+          price_recliner: rSeats > 0 ? parseFloat(form.price_recliner) : 0,
+          total_seats: parseInt(form.total_seats) || 0,
+          seats_premium: pSeats,
+          seats_gold: gSeats,
+          seats_recliner: rSeats,
         }));
         await Promise.all(promises);
         toast.success(`Created ${promises.length} showtimes!`);
@@ -182,7 +248,7 @@ export default function AdminShowtimesPage() {
                     <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Date</th>
                     <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Time</th>
                     <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider hidden sm:table-cell">Screen</th>
-                    <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Price</th>
+                    <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Prices</th>
                     <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Seats</th>
                     <th className="text-left py-3 px-5 text-[#6B7280] font-semibold text-xs uppercase tracking-wider">Action</th>
                   </tr>
@@ -208,7 +274,12 @@ export default function AdminShowtimesPage() {
                           </div>
                         </td>
                         <td className="py-3.5 px-5 hidden sm:table-cell text-[#6B7280]">{st.screen_name}</td>
-                        <td className="py-3.5 px-5 font-bold text-amber-600">{formatCurrency(st.price)}</td>
+                        <td className="py-3.5 px-5 font-bold text-[#111827]">
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            <span className="text-amber-600">G: {formatCurrency(st.price_gold)}</span>
+                            <span className="text-[#0B70D5]">P: {formatCurrency(st.price_premium)}</span>
+                          </div>
+                        </td>
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-2">
                             <div className="w-16 h-1.5 rounded-full bg-[#F3F4F6] overflow-hidden">
@@ -328,19 +399,64 @@ export default function AdminShowtimesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Screen</Label>
-                  <Select value={form.screen_name} onValueChange={(v) => setForm((p) => ({ ...p, screen_name: v }))}>
+                  <Select value={form.screen_name} onValueChange={(v) => {
+                    const seats = SCREEN_SEATS[v as keyof typeof SCREEN_SEATS] || { premium: 0, gold: 0, recliner: 0 };
+                    setForm((p) => ({ 
+                      ...p, 
+                      screen_name: v,
+                      seats_premium: seats.premium.toString(),
+                      seats_gold: seats.gold.toString(),
+                      seats_recliner: seats.recliner.toString()
+                    }));
+                  }}>
                     <SelectTrigger className="border-[#E5E7EB]"><SelectValue /></SelectTrigger>
                     <SelectContent>{SCREENS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Price (₹)</Label>
-                  <Input type="number" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} className="border-[#E5E7EB]" />
-                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Total Seats</Label>
-                <Input type="number" value={form.total_seats} onChange={(e) => setForm((p) => ({ ...p, total_seats: e.target.value }))} className="border-[#E5E7EB]" />
+              <div className="grid grid-cols-3 gap-3">
+                {(parseInt(form.seats_premium) || 0) > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Premium (₹)</Label>
+                    <Input type="number" value={form.price_premium} onChange={(e) => setForm((p) => ({ ...p, price_premium: e.target.value }))} className="border-[#E5E7EB]" />
+                  </div>
+                )}
+                {(parseInt(form.seats_gold) || 0) > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Gold (₹)</Label>
+                    <Input type="number" value={form.price_gold} onChange={(e) => setForm((p) => ({ ...p, price_gold: e.target.value }))} className="border-[#E5E7EB]" />
+                  </div>
+                )}
+                {(parseInt(form.seats_recliner) || 0) > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider">Recliner (₹)</Label>
+                    <Input type="number" value={form.price_recliner} onChange={(e) => setForm((p) => ({ ...p, price_recliner: e.target.value }))} className="border-[#E5E7EB]" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider" title="Total Seats">Total</Label>
+                  <Input type="number" value={form.total_seats} readOnly className="border-[#E5E7EB] bg-[#F9FAFB] cursor-not-allowed" />
+                </div>
+                {(parseInt(form.seats_premium) || 0) > 0 ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider" title="Premium Seats">Premium</Label>
+                    <Input type="number" value={form.seats_premium} readOnly className="border-[#E5E7EB] bg-[#F9FAFB] cursor-not-allowed" />
+                  </div>
+                ) : <div />}
+                {(parseInt(form.seats_gold) || 0) > 0 ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider" title="Gold Seats">Gold</Label>
+                    <Input type="number" value={form.seats_gold} readOnly className="border-[#E5E7EB] bg-[#F9FAFB] cursor-not-allowed" />
+                  </div>
+                ) : <div />}
+                {(parseInt(form.seats_recliner) || 0) > 0 ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-[#374151] uppercase tracking-wider" title="Recliner Seats">Recliner</Label>
+                    <Input type="number" value={form.seats_recliner} readOnly className="border-[#E5E7EB] bg-[#F9FAFB] cursor-not-allowed" />
+                  </div>
+                ) : <div />}
               </div>
             </div>
             <DialogFooter className="gap-2 pt-2">

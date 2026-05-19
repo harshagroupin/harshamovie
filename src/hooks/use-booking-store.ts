@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { BookingState, BookingActions, Movie, Showtime } from "@/lib/types";
+import { calculateSubtotal } from "@/lib/seat-layouts";
 
 const initialState: BookingState = {
   movieId: null,
@@ -10,6 +11,9 @@ const initialState: BookingState = {
   showTime: null,
   screenName: null,
   price: 0,
+  price_premium: 0,
+  price_gold: 0,
+  price_recliner: 0,
   selectedSeats: [],
   customerName: "",
   phone: "",
@@ -38,6 +42,9 @@ export const useBookingStore = create<BookingState & BookingActions>(
         showTime: showtime.show_time,
         screenName: showtime.screen_name,
         price: showtime.price,
+        price_premium: showtime.price_premium || showtime.price,
+        price_gold: showtime.price_gold || showtime.price,
+        price_recliner: showtime.price_recliner || showtime.price,
         selectedSeats: [],
       }),
 
@@ -66,12 +73,17 @@ export const useBookingStore = create<BookingState & BookingActions>(
 
     getSubtotal: () => {
       const state = get();
-      return state.selectedSeats.length * state.price;
+      return calculateSubtotal(state.selectedSeats, state.screenName, {
+        premium: state.price_premium,
+        gold: state.price_gold,
+        recliner: state.price_recliner,
+        base: state.price
+      });
     },
 
     getFinalAmount: () => {
       const state = get();
-      const subtotal = state.selectedSeats.length * state.price;
+      const subtotal = state.getSubtotal();
       if (!state.discount || !state.discountType) return subtotal;
       if (state.discountType === "percentage") {
         return Math.max(0, subtotal - (subtotal * state.discount) / 100);

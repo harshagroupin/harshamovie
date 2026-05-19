@@ -108,11 +108,11 @@ DECLARE
 BEGIN
   FOR m_record IN SELECT id FROM movies WHERE is_active = true LOOP
     FOR d IN 0..6 LOOP
-      INSERT INTO showtimes (movie_id, screen_name, show_date, show_time, price, total_seats) VALUES
-      (m_record.id, 'Screen 1', CURRENT_DATE + d, '10:00', 150, 100),
-      (m_record.id, 'Screen 1', CURRENT_DATE + d, '14:00', 200, 100),
-      (m_record.id, 'Screen 1', CURRENT_DATE + d, '18:00', 250, 100),
-      (m_record.id, 'IMAX', CURRENT_DATE + d, '21:00', 350, 100);
+      INSERT INTO showtimes (movie_id, screen_name, show_date, show_time, price, price_premium, price_gold, price_recliner, total_seats, seats_premium, seats_gold, seats_recliner) VALUES
+      (m_record.id, 'Screen 1', CURRENT_DATE + d, '10:00', 150, 250, 150, 350, 100, 30, 50, 20),
+      (m_record.id, 'Screen 1', CURRENT_DATE + d, '14:00', 200, 300, 200, 400, 100, 30, 50, 20),
+      (m_record.id, 'Screen 1', CURRENT_DATE + d, '18:00', 250, 350, 250, 450, 100, 30, 50, 20),
+      (m_record.id, 'IMAX', CURRENT_DATE + d, '21:00', 350, 450, 350, 550, 100, 30, 50, 20);
     END LOOP;
   END LOOP;
 END $$;

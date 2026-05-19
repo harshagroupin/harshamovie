@@ -41,7 +41,13 @@ CREATE TABLE IF NOT EXISTS showtimes (
   show_date DATE NOT NULL,
   show_time TIME NOT NULL,
   price DECIMAL(10,2) NOT NULL DEFAULT 200,
+  price_premium DECIMAL(10,2) NOT NULL DEFAULT 300,
+  price_gold DECIMAL(10,2) NOT NULL DEFAULT 200,
+  price_recliner DECIMAL(10,2) NOT NULL DEFAULT 400,
   total_seats INTEGER DEFAULT 100,
+  seats_premium INTEGER NOT NULL DEFAULT 30,
+  seats_gold INTEGER NOT NULL DEFAULT 50,
+  seats_recliner INTEGER NOT NULL DEFAULT 20,
   booked_seats JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );

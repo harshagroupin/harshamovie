@@ -282,6 +282,8 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                         const bookedCount = (st.booked_seats as string[])?.length || 0;
                         const availableSeats = st.total_seats - bookedCount;
                         const isFull = availableSeats <= 0;
+                        const validPrices = [st.price_premium, st.price_gold, st.price_recliner, st.price].filter(p => p > 0);
+                        const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
 
                         return (
                           <Link
@@ -297,7 +299,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                             <div className="text-center">
                               <p className="font-bold text-base text-[#131316]">{formatTime(st.show_time)}</p>
                               <p className="text-xs text-[#8E8E93] mt-1">{st.screen_name}</p>
-                              <p className="text-xs text-[#0B70D5] mt-0.5 font-semibold">{formatCurrency(st.price)}</p>
+                              <p className="text-xs text-[#0B70D5] mt-0.5 font-semibold">{formatCurrency(minPrice)}</p>
                               <p className={`text-[11px] mt-1.5 font-medium ${isFull ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
                                 {isFull ? "Housefull" : `${availableSeats} seats left`}
                               </p>

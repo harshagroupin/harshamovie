@@ -418,9 +418,9 @@ body {
 }
 
 .seat-available {
-  background: #F0F0F2;
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-secondary);
+  background: #FFFFFF;
+  border: 1px solid #131316;
+  color: #131316;
 }
 
 .seat-available:hover {

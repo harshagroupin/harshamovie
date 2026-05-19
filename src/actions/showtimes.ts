@@ -91,6 +91,20 @@ export async function deleteShowtime(id: string): Promise<void> {
 
 export async function updateBookedSeats(id: string, seats: string[]): Promise<void> {
   const supabase = createAdminClient();
+  
+  // Try using the safe RPC function first
+  const { error: rpcError } = await supabase.rpc('book_seats_safe', {
+    p_showtime_id: id,
+    p_seats: seats
+  });
+
+  if (!rpcError) {
+    revalidatePath("/", "layout");
+    return;
+  }
+  
+  // Fallback if RPC doesn't exist yet
+  console.warn("RPC book_seats_safe failed or not found, falling back to manual update:", rpcError.message);
   const { data: showtime } = await supabase
     .from("showtimes")
     .select("booked_seats")
