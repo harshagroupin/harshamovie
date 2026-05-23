@@ -438,6 +438,30 @@ function HomeContentInner({ movies, featuredMovies, promoCodes = [] }: HomeConte
         )}
           </>
         )}
+
+        {/* ===== LOCAL SEO TEXT SECTION ===== */}
+        <section className="w-full max-w-[1264px] mx-auto px-6 sm:px-0 border-t border-[#E8E8EA] pt-12 mt-4 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h4 className="text-base font-bold text-[#131316] mb-3">Premium Cinema Experience in Karnal</h4>
+              <p className="text-[13px] text-[#545459] leading-relaxed">
+                Welcome to <strong>Harsh A Movie</strong>, Karnal's ultimate cinema destination. Located on GT Road, Sector 12, our theater offers a premium entertainment experience with state-of-the-art projection technology, crystal-clear screens, and immersive 3D capabilities.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-[#131316] mb-3">Immersive Dolby Atmos Sound & Comfort</h4>
+              <p className="text-[13px] text-[#545459] leading-relaxed">
+                Experience sound like never before with our multi-channel Dolby Atmos sound system that brings every movie to life. Relax in our premium seating arrangements, including ultra-luxurious Recliners, spacious Gold seats, and comfortable Premium seating rows.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-[#131316] mb-3">Easy Online Ticket Booking & Deals</h4>
+              <p className="text-[13px] text-[#545459] leading-relaxed">
+                Check dynamic showtimes, browse coming soon movies, and secure your tickets online. Enjoy flat discounts and promotional offers by copying active discount codes during the reservation flow. Pay at our box office counters via cash.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* ===== FILTER MODAL POPUP ===== */}

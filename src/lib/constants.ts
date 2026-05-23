@@ -1,7 +1,7 @@
 export const APP_NAME = "Harsh A Movie";
 export const APP_TAGLINE = "Premium Cinema";
 export const APP_DESCRIPTION = "Karnal's premier movie theater — Premium screens, Dolby sound, luxury seating. Book your tickets now.";
-export const APP_URL = "https://harshamovies.vercel.app";
+export const APP_URL = "https://harshamovies.com";
 
 // Business Info
 export const BUSINESS = {

@@ -20,6 +20,7 @@ interface Props {
 export function MovieDetailContent({ movie, showtimes }: Props) {
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const { setMovie, setShowtime } = useBookingStore();
 
   // Group showtimes by date
@@ -42,6 +43,38 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
   const getYouTubeId = (url: string) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&\s?]+)/);
     return match?.[1];
+  };
+
+  const faqData = [
+    {
+      q: `What is the release date of ${movie.title} at Harsha Movies?`,
+      a: `${movie.title} was officially released on ${formatDate(movie.release_date)}. You can view showtimes and book tickets on this page.`
+    },
+    {
+      q: `In what languages is ${movie.title} available here?`,
+      a: `${movie.title} is currently screened in ${movie.language || "Hindi"} language at Harsha Movies Karnal.`
+    },
+    {
+      q: `What is the duration/runtime of ${movie.title}?`,
+      a: `The running time of ${movie.title} is approximately ${movie.duration ? `${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m` : "2 hours and 15 minutes"}.`
+    },
+    {
+      q: `How can I book tickets for ${movie.title} online?`,
+      a: `Scroll down to the 'Select Showtime' section, pick a date and showtime slot, select your preferred seats (Premium, Gold, or Recliner), and complete the booking using cash at the counter.`
+    }
+  ];
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqData.map(item => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.a
+      }
+    }))
   };
 
   return (
@@ -226,6 +259,38 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+
+          {/* FAQ JSON-LD */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          />
+
+          {/* FAQs Section */}
+          <section className="mb-14">
+            <h3 className="text-[20px] font-bold text-[#131316] mb-6">Frequently Asked Questions</h3>
+            <div className="flex flex-col gap-4">
+              {faqData.map((faq, idx) => {
+                const isOpen = activeFaq === idx;
+                return (
+                  <div key={idx} className="border border-[#E8E8EA] rounded-xl overflow-hidden bg-[#FAFAFA]">
+                    <button
+                      onClick={() => setActiveFaq(isOpen ? null : idx)}
+                      className="w-full flex items-center justify-between p-4 text-left font-bold text-[#131316] hover:bg-[#F5F5F6] transition-colors cursor-pointer border-none bg-transparent"
+                    >
+                      <span className="text-[14px] md:text-[15px]">{faq.q}</span>
+                      <span className="text-[18px] text-[#8E8E93] ml-2 shrink-0">{isOpen ? "−" : "+"}</span>
+                    </button>
+                    {isOpen && (
+                      <div className="p-4 pt-0 border-t border-[#E8E8EA] text-[13px] md:text-[14px] text-[#545459] leading-relaxed bg-white">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
 
