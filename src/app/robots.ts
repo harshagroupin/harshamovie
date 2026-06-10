@@ -9,7 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: ["/admin/"],
       },
-      // Allow AI crawlers explicitly for AEO/GEO
       {
         userAgent: "GPTBot",
         allow: "/",
