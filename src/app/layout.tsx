@@ -2,7 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_URL, BUSINESS } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_URL, SEO_KEYWORDS } from "@/lib/constants";
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+  generateMovieTheaterSchema,
+} from "@/lib/schema";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -27,14 +32,9 @@ export const metadata: Metadata = {
   },
   description: APP_DESCRIPTION,
   keywords: [
-    "movie tickets",
-    "cinema booking",
-    "Harsha Movies Karnal",
-    "movie theater",
-    "book tickets online",
-    "Karnal cinema",
-    "Harsh A Movie",
-    "cinema Karnal"
+    ...SEO_KEYWORDS.primary,
+    ...SEO_KEYWORDS.secondary,
+    ...SEO_KEYWORDS.longTail,
   ],
   alternates: {
     canonical: "./",
@@ -59,17 +59,26 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: APP_NAME,
+    title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
     url: APP_URL,
     siteName: APP_NAME,
     locale: "en_IN",
     type: "website",
+    images: [
+      {
+        url: `${APP_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: `${APP_NAME} — Premium Cinema in Karnal`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
+    images: [`${APP_URL}/og-image.png`],
   },
 };
 
@@ -78,33 +87,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "MovieTheater",
-    "name": BUSINESS.name,
-    "url": APP_URL,
-    "logo": `${APP_URL}/logo.png.png`,
-    "description": BUSINESS.description,
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "GT Road, Sector 12",
-      "addressLocality": "Karnal",
-      "addressRegion": "Haryana",
-      "postalCode": "132001",
-      "addressCountry": "IN"
-    },
-    "telephone": BUSINESS.phone,
-    "priceRange": "₹150-₹500",
-    "openingHours": "Mo-Su 09:00-23:00"
-  };
+  const schemas = [
+    generateOrganizationSchema(),
+    generateWebSiteSchema(),
+    generateMovieTheaterSchema(),
+  ];
 
   return (
     <html lang="en" data-theme="light" style={{ scrollbarWidth: "none", overscrollBehavior: "none" }}>
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        {schemas.map((schema, i) => (
+          <script
+            key={`schema-${i}`}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          />
+        ))}
       </head>
       <body className={`${nunitoSans.variable} font-sans antialiased bg-background text-foreground`}>
         {children}

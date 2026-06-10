@@ -15,9 +15,10 @@ import type { Movie, Showtime } from "@/lib/types";
 interface Props {
   movie: Movie;
   showtimes: Showtime[];
+  faqData: { question: string; answer: string }[];
 }
 
-export function MovieDetailContent({ movie, showtimes }: Props) {
+export function MovieDetailContent({ movie, showtimes, faqData }: Props) {
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -45,37 +46,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
     return match?.[1];
   };
 
-  const faqData = [
-    {
-      q: `What is the release date of ${movie.title} at Harsha Movies?`,
-      a: `${movie.title} was officially released on ${formatDate(movie.release_date)}. You can view showtimes and book tickets on this page.`
-    },
-    {
-      q: `In what languages is ${movie.title} available here?`,
-      a: `${movie.title} is currently screened in ${movie.language || "Hindi"} language at Harsha Movies Karnal.`
-    },
-    {
-      q: `What is the duration/runtime of ${movie.title}?`,
-      a: `The running time of ${movie.title} is approximately ${movie.duration ? `${Math.floor(movie.duration / 60)}h ${movie.duration % 60}m` : "2 hours and 15 minutes"}.`
-    },
-    {
-      q: `How can I book tickets for ${movie.title} online?`,
-      a: `Scroll down to the 'Select Showtime' section, pick a date and showtime slot, select your preferred seats (Premium, Gold, or Recliner), and complete the booking using cash at the counter.`
-    }
-  ];
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": faqData.map(item => ({
-      "@type": "Question",
-      "name": item.q,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": item.a
-      }
-    }))
-  };
+  // faqData is now passed from server component (page.tsx) with JSON-LD
 
   return (
     <PageTransition>
@@ -84,7 +55,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
         <div className="absolute inset-0 z-0">
           <Image
             src={movie.banner_url || movie.poster_url || "/images/placeholder-banner.jpg"}
-            alt={movie.title}
+            alt={`${movie.title} movie banner — now showing at Harsh A Movie Karnal`}
             fill
             className="object-cover opacity-60"
             priority
@@ -181,7 +152,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
               <div className="relative w-[220px] lg:w-[260px] aspect-[2/3] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 bg-[#1A1A1A]">
                 <Image
                   src={movie.poster_url || "/images/placeholder-poster.svg"}
-                  alt={movie.title}
+                  alt={`${movie.title} official movie poster`}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   priority
@@ -215,7 +186,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                   <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden mb-3 border border-[#E8E8EA]">
                     <Image
                       src={movie.banner_url || movie.poster_url || "/images/placeholder-banner.jpg"}
-                      alt="Trailer Thumbnail"
+                      alt={`${movie.title} official trailer thumbnail`}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -241,7 +212,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                 <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-[#E8E8EA]">
                   <Image
                     src={movie.poster_url || "/images/placeholder-poster.svg"}
-                    alt="Poster"
+                    alt={`${movie.title} movie poster — high resolution`}
                     fill
                     className="object-cover"
                   />
@@ -252,7 +223,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                   <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden border border-[#E8E8EA]">
                     <Image
                       src={movie.banner_url}
-                      alt="Wallpaper"
+                      alt={`${movie.title} movie wallpaper — banner image`}
                       fill
                       className="object-cover"
                     />
@@ -262,11 +233,7 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
             </div>
           </section>
 
-          {/* FAQ JSON-LD */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-          />
+          {/* FAQ JSON-LD is now rendered server-side in page.tsx */}
 
           {/* FAQs Section */}
           <section className="mb-14">
@@ -280,12 +247,12 @@ export function MovieDetailContent({ movie, showtimes }: Props) {
                       onClick={() => setActiveFaq(isOpen ? null : idx)}
                       className="w-full flex items-center justify-between p-4 text-left font-bold text-[#131316] hover:bg-[#F5F5F6] transition-colors cursor-pointer border-none bg-transparent"
                     >
-                      <span className="text-[14px] md:text-[15px]">{faq.q}</span>
+                      <span className="text-[14px] md:text-[15px]">{faq.question}</span>
                       <span className="text-[18px] text-[#8E8E93] ml-2 shrink-0">{isOpen ? "−" : "+"}</span>
                     </button>
                     {isOpen && (
                       <div className="p-4 pt-0 border-t border-[#E8E8EA] text-[13px] md:text-[14px] text-[#545459] leading-relaxed bg-white">
-                        {faq.a}
+                        {faq.answer}
                       </div>
                     )}
                   </div>

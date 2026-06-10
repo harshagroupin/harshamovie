@@ -2,28 +2,29 @@ import { MetadataRoute } from "next";
 import { getMovies } from "@/actions/movies";
 import { APP_URL } from "@/lib/constants";
 
-export const revalidate = 3600; // Cache and revalidate sitemap every hour
+export const revalidate = 3600; // Revalidate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = APP_URL;
 
-  // Base routes
-  const routes = [
+  // Static routes
+  const routes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: "daily" as const,
+      changeFrequency: "daily",
       priority: 1.0,
     },
   ];
 
   try {
     const movies = await getMovies();
-    const movieUrls = movies.map((movie) => ({
+    const movieUrls: MetadataRoute.Sitemap = movies.map((movie) => ({
       url: `${baseUrl}/movie/${movie.slug}`,
       lastModified: new Date(movie.release_date || movie.created_at || new Date()),
-      changeFrequency: "weekly" as const,
+      changeFrequency: "weekly",
       priority: 0.8,
+      images: movie.poster_url ? [movie.poster_url] : undefined,
     }));
 
     return [...routes, ...movieUrls];
