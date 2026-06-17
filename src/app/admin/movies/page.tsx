@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Search, Edit, Trash2, Star, Film, ArrowUpRight } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Star, Film, ArrowUpRight, FileSpreadsheet } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -66,12 +66,20 @@ export default function AdminMoviesPage() {
             <h1 className="text-2xl font-black text-[#0F1117] tracking-tight">Movies</h1>
             <p className="text-[#6B7280] text-sm mt-0.5">{movies.length} movies in database</p>
           </div>
-          <Link href="/admin/movies/new">
-            <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E50914] hover:bg-[#CC0812] text-white text-sm font-bold transition-all shadow-lg shadow-red-500/25 hover:scale-[1.02] active:scale-[0.98]">
-              <Plus className="w-4 h-4" />
-              Add Movie
-            </button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/movies/bulk-upload">
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[#374151] text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]">
+                <FileSpreadsheet className="w-4 h-4" />
+                Bulk Upload
+              </button>
+            </Link>
+            <Link href="/admin/movies/new">
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#E50914] hover:bg-[#CC0812] text-white text-sm font-bold transition-all shadow-lg shadow-red-500/25 hover:scale-[1.02] active:scale-[0.98]">
+                <Plus className="w-4 h-4" />
+                Add Movie
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Search */}

@@ -18,10 +18,13 @@ export async function getMovies(): Promise<Movie[]> {
       .select("*")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[getMovies] Database error:", error);
+      throw new Error(error.message);
+    }
     return data || [];
   } catch (e) {
-    console.error("[getMovies] Error:", e);
+    console.error("[getMovies] Catch error:", e);
     return [];
   }
 }
@@ -35,10 +38,13 @@ export async function getFeaturedMovies(): Promise<Movie[]> {
       .eq("is_active", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[getFeaturedMovies] Database error:", error);
+      throw new Error(error.message);
+    }
     return data || [];
   } catch (e) {
-    console.error("[getFeaturedMovies] Error:", e);
+    console.error("[getFeaturedMovies] Catch error:", e);
     return [];
   }
 }
@@ -51,9 +57,13 @@ export async function getMovieBySlug(slug: string): Promise<Movie | null> {
       .select("*")
       .eq("slug", slug)
       .single();
-    if (error) return null;
+    if (error) {
+      console.error(`[getMovieBySlug] Database error for slug "${slug}":`, error);
+      return null;
+    }
     return data;
-  } catch {
+  } catch (e) {
+    console.error(`[getMovieBySlug] Catch error for slug "${slug}":`, e);
     return null;
   }
 }

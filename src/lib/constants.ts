@@ -15,7 +15,7 @@ export const BUSINESS = {
   postalCode: "132001",
   country: "IN",
   phone: "+91 8595540725",
-  email: "info@harshamovies.in",
+  email: "info@harshamovies.com",
   whatsapp: "918595540725",
   hours: "9:00 AM – 11:00 PM",
   tagline: "Karnal's Ultimate Cinema Destination",
@@ -78,7 +78,7 @@ export const HOMEPAGE_FAQS = [
   {
     question: "How can I book movie tickets at Harsh A Movie?",
     answer:
-      "You can book movie tickets online at harshamovies.com. Simply browse the 'Now Showing' section, select your preferred movie and showtime, choose your seats (Premium, Gold, or Recliner), and complete the booking. Payment is accepted via cash at the counter.",
+      "You can book movie tickets online at harshamovies.com. Simply browse the 'Now Showing' section, select your preferred movie and showtime, choose your seats (Premium, Gold, or Recliner), and complete the booking. Payment is accepted online via Paytm.",
   },
   {
     question: "What are the ticket prices at Harsh A Movie Karnal?",
@@ -130,7 +130,7 @@ export const ADMIN_NAV_LINKS = [
 ];
 
 export const PAYMENT_MODES = [
-  { value: "cash", label: "Cash At Counter" },
+  { value: "paytm", label: "Pay Online (Paytm)" },
 ];
 
 export const GENRES = [

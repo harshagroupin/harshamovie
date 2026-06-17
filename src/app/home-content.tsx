@@ -457,7 +457,7 @@ function HomeContentInner({ movies, featuredMovies, promoCodes = [] }: HomeConte
             <div>
               <h4 className="text-base font-bold text-[#131316] mb-3">Easy Online Ticket Booking & Deals</h4>
               <p className="text-[13px] text-[#545459] leading-relaxed">
-                Check dynamic showtimes, browse coming soon movies, and secure your tickets online. Enjoy flat discounts and promotional offers by copying active discount codes during the reservation flow. Pay at our box office counters via cash.
+                Check dynamic showtimes, browse coming soon movies, and secure your tickets online. Enjoy flat discounts and promotional offers by copying active discount codes during the reservation flow. Pay securely online via Paytm.
               </p>
             </div>
           </div>
@@ -648,6 +648,8 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const resetTimer = useCallback(() => {
     if (!movies || movies.length === 0) return;
@@ -785,7 +787,25 @@ function HeroCarousel({ movies }: { movies: Movie[] }) {
       </div>
 
       {/* ===== MOBILE LAYOUT ===== */}
-      <div className="flex md:hidden flex-col w-full px-4 pt-6 pb-2">
+      <div
+        className="flex md:hidden flex-col w-full px-4 pt-6 pb-2"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          if (touchStartX.current === null || touchStartY.current === null) return;
+          const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+          const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+          // Only trigger if horizontal swipe is dominant (not scrolling)
+          if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX < 0) next();
+            else prev();
+          }
+          touchStartX.current = null;
+          touchStartY.current = null;
+        }}
+      >
         <Link href={`/movie/${movie.slug}`} className="block no-underline">
           <motion.div
             key={`mobile-${movie.id}`}

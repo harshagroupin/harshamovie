@@ -88,7 +88,7 @@ export function generateMovieTheaterSchema() {
     email: BUSINESS.email,
     priceRange: "₹150-₹500",
     currenciesAccepted: "INR",
-    paymentAccepted: "Cash",
+    paymentAccepted: "Online Payment (Paytm)",
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",

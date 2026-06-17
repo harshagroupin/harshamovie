@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Tag, CreditCard, Banknote, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Tag, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { createBooking } from "@/actions/bookings";
@@ -20,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function CheckoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const store = useBookingStore();
   const {
     movieTitle, moviePoster, selectedSeats, price,
@@ -38,6 +38,15 @@ export function CheckoutContent() {
   const [promoMessage, setPromoMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Handle error redirects from Paytm callback
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "payment_failed") toast.error("Payment failed. Please try again.");
+    else if (error === "callback_error") toast.error("Payment processing error. Please contact support.");
+    else if (error === "transaction_not_found") toast.error("Transaction not found.");
+    else if (error === "invalid_callback") toast.error("Invalid payment response.");
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -100,26 +109,95 @@ export function CheckoutContent() {
     try {
       setCustomerInfo({ name, phone, email });
 
-      const booking = await createBooking({
-        showtimeId: showtimeId!,
-        customerName: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        selectedSeats,
-        subtotal,
-        discount: discountAmount,
-        finalAmount,
-        promoCodeUsed: promoCode || null,
-        paymentMode,
+      const res = await fetch("/api/paytm/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          showtimeId: showtimeId!,
+          selectedSeats,
+          customerName: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          subtotal,
+          discount: discountAmount,
+          finalAmount,
+          promoCode: promoCode || undefined,
+        }),
       });
 
-      toast.success("Booking confirmed!");
-      router.push(`/booking/confirmation?id=${booking.booking_id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create order");
+
+      loadPaytmCheckout(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Booking failed. Please try again.";
-      toast.error(errorMessage);
+      const msg = err instanceof Error ? err.message : "Payment initiation failed.";
+      toast.error(msg);
       setSubmitting(false);
     }
+  };
+
+  /** Load Paytm JS Checkout and invoke payment overlay */
+  const loadPaytmCheckout = (data: {
+    txnToken: string;
+    orderId: string;
+    mid: string;
+    amount: string;
+  }) => {
+    // Remove previous script if any
+    const old = document.getElementById("paytm-checkout-js");
+    if (old) old.remove();
+
+    const script = document.createElement("script");
+    script.id = "paytm-checkout-js";
+    script.src = `https://securegw.paytm.in/merchantpgpui/checkoutjs/merchants/${data.mid}.js`;
+    script.crossOrigin = "anonymous";
+
+    script.onload = () => {
+      const config = {
+        root: "",
+        flow: "DEFAULT",
+        data: {
+          orderId: data.orderId,
+          token: data.txnToken,
+          tokenType: "TXN_TOKEN",
+          amount: data.amount,
+        },
+        handler: {
+          transactionStatus: function (paymentStatus: Record<string, unknown>) {
+            console.log("[Paytm] Transaction status:", paymentStatus);
+            window.location.href = `/booking/payment-status?orderId=${data.orderId}`;
+          },
+          notifyMerchant: function (eventName: string) {
+            console.log("[Paytm] Event:", eventName);
+            if (eventName === "APP_CLOSED") {
+              // User closed overlay — verify if payment went through
+              window.location.href = `/booking/payment-status?orderId=${data.orderId}`;
+            }
+          },
+        },
+      };
+
+      const w = window as unknown as Record<string, Record<string, { init: (c: unknown) => Promise<void>; invoke: () => void }>>;
+      if (w.Paytm?.CheckoutJS) {
+        w.Paytm.CheckoutJS.init(config)
+          .then(() => w.Paytm.CheckoutJS.invoke())
+          .catch((err: unknown) => {
+            console.error("[Paytm] Init error:", err);
+            toast.error("Failed to open payment gateway");
+            setSubmitting(false);
+          });
+      } else {
+        toast.error("Payment gateway not available");
+        setSubmitting(false);
+      }
+    };
+
+    script.onerror = () => {
+      toast.error("Failed to load payment gateway. Please try again.");
+      setSubmitting(false);
+    };
+
+    document.body.appendChild(script);
   };
 
   return (
@@ -214,19 +292,15 @@ export function CheckoutContent() {
               {/* Payment Mode */}
               <div className="glass rounded-2xl p-6">
                 <h3 className="font-semibold text-lg text-[#131316] mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-[#0B70D5]" /> Payment
+                  <CreditCard className="w-5 h-5 text-[#0B70D5]" /> Payment Method
                 </h3>
-                <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as "cash")}>
-                  <SelectTrigger className="bg-white border-[#E8E8EA] text-[#131316]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-[#E8E8EA]">
-                    <SelectItem value="cash">
-                      <span className="flex items-center gap-2"><Banknote className="w-4 h-4" /> Cash At Counter</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] text-[#8E8E93] mt-2">Pay at the counter to confirm your seats.</p>
+                <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#0B70D5] bg-[#E2F1FE] text-[#0B70D5]">
+                  <CreditCard className="w-6 h-6" />
+                  <div>
+                    <span className="text-[14px] font-semibold">Pay Online (Paytm)</span>
+                    <p className="text-[11px] text-[#0B70D5]/70 mt-0.5">You will be redirected to Paytm to complete payment securely.</p>
+                  </div>
+                </div>
               </div>
             </div>
 

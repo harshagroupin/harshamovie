@@ -404,17 +404,34 @@ body {
 
 /* ===== SEAT STYLES (preserve for booking pages) ===== */
 .seat {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px 6px 10px 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px 5px 8px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+}
+
+@media (min-width: 480px) {
+  .seat {
+    width: 32px;
+    height: 32px;
+    font-size: 9px;
+  }
+}
+
+@media (min-width: 768px) {
+  .seat {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px 6px 10px 10px;
+    font-size: 10px;
+  }
 }
 
 .seat-available {

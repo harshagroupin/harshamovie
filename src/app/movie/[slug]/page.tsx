@@ -117,7 +117,7 @@ export default async function MovieDetailPage({ params }: Props) {
     },
     {
       question: `How can I book tickets for ${movie.title} online?`,
-      answer: `Visit harshamovies.com/movie/${movie.slug}, select a showtime, choose your preferred seats (Premium, Gold, or Recliner), and complete the booking. Payment is accepted via cash at the counter.`,
+      answer: `Visit harshamovies.com/movie/${movie.slug}, select a showtime, choose your preferred seats (Premium, Gold, or Recliner), and complete the booking. Payment is accepted online via Paytm.`,
     },
     {
       question: `What are the ticket prices for ${movie.title}?`,

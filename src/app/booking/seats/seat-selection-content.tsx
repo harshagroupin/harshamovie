@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Monitor, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Monitor, Calendar, Clock, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
@@ -153,7 +153,7 @@ export function SeatSelectionContent() {
               </div>
 
               {/* Seat Grid */}
-              <div className="flex flex-col items-center gap-2 mb-10 overflow-x-auto px-4 pb-4">
+              <div className="flex flex-col items-center gap-2 mb-10 overflow-x-auto w-full px-1 sm:px-4 pb-4">
                 {tiers.map(({ tier, label, price }) => {
                   const tierRows = layout.filter(r => r.tier === tier);
                   if (tierRows.length === 0) return null;
@@ -165,15 +165,15 @@ export function SeatSelectionContent() {
                       </div>
                       
                       {tierRows.map((row) => (
-                        <div key={row.id} className="flex items-center gap-3 mb-2">
+                        <div key={row.id} className="flex items-center gap-1.5 sm:gap-3 mb-1.5 sm:mb-2">
                           <span className="w-4 text-[11px] text-[#131316] text-right font-mono font-bold">
                             {row.id}
                           </span>
                           
-                          <div className="flex gap-1.5 justify-center">
+                          <div className="flex gap-1 sm:gap-1.5 justify-center">
                             {row.seats.map((seatId, idx) => {
                               if (seatId === null) {
-                                return <div key={`gap-${row.id}-${idx}`} className="w-7 h-7" />;
+                                return <div key={`gap-${row.id}-${idx}`} className="w-4 h-4 sm:w-7 sm:h-7" />;
                               }
 
                               const isBooked = bookedSeats.includes(seatId);
@@ -216,18 +216,50 @@ export function SeatSelectionContent() {
               </div>
 
               {/* Legend */}
-              <div className="flex justify-center gap-8 text-[12px] text-[#8E8E93]">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded seat-available" />
+              <div className="flex justify-center gap-4 sm:gap-8 text-[11px] sm:text-[12px] text-[#8E8E93]">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded seat-available" />
                   <span>Available</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-[#0B70D5] shadow-[0_0_8px_rgba(11,112,213,0.3)]" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-[#0B70D5] shadow-[0_0_8px_rgba(11,112,213,0.3)]" />
                   <span>Selected</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded seat-booked" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded seat-booked" />
                   <span>Booked</span>
+                </div>
+              </div>
+
+              {/* Booking Instructions */}
+              <div className="mt-8 mx-auto w-full max-w-xl">
+                <div className="bg-[#F8F9FA] border border-[#E8E8EA] rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Info className="w-4 h-4 text-[#0B70D5] shrink-0" />
+                    <h3 className="text-sm font-bold text-[#131316]">Booking Instructions</h3>
+                  </div>
+                  <ul className="text-[12px] sm:text-[13px] text-[#545459] space-y-2 list-none p-0 m-0">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0B70D5] font-bold mt-0.5">1.</span>
+                      <span>Tap on available seats to select them. Selected seats will turn <strong className="text-[#0B70D5]">blue</strong>.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0B70D5] font-bold mt-0.5">2.</span>
+                      <span>You can select multiple seats. Tap again to deselect a seat.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0B70D5] font-bold mt-0.5">3.</span>
+                      <span>Greyed out seats are already booked and cannot be selected.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0B70D5] font-bold mt-0.5">4.</span>
+                      <span>After selecting seats, click <strong>Checkout</strong> to proceed with payment.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0B70D5] font-bold mt-0.5">5.</span>
+                      <span>Seats are held for 10 minutes after booking. Please complete payment within that time.</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
         </div>
