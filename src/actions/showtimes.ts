@@ -98,49 +98,18 @@ export async function updateBookedSeats(id: string, seats: string[]): Promise<vo
     p_seats: seats
   });
 
-  if (!rpcError) {
-    revalidatePath("/", "layout");
-    return;
+  if (rpcError) {
+    throw new Error(rpcError.message);
   }
-  
-  // Fallback if RPC doesn't exist yet
-  console.warn("RPC book_seats_safe failed or not found, falling back to manual update:", rpcError.message);
-  const { data: showtime } = await supabase
-    .from("showtimes")
-    .select("booked_seats")
-    .eq("id", id)
-    .single();
-
-  if (!showtime) throw new Error("Showtime not found");
-
-  const currentBooked = (showtime.booked_seats as string[]) || [];
-  const updatedSeats = [...new Set([...currentBooked, ...seats])];
-
-  const { error } = await supabase
-    .from("showtimes")
-    .update({ booked_seats: updatedSeats })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
 
 export async function freeSeats(showtimeId: string, seatsToFree: string[]): Promise<void> {
   const supabase = createAdminClient();
-  const { data: showtime } = await supabase
-    .from("showtimes")
-    .select("booked_seats")
-    .eq("id", showtimeId)
-    .single();
-
-  if (!showtime) throw new Error("Showtime not found");
-
-  const currentBooked = (showtime.booked_seats as string[]) || [];
-  const updatedSeats = currentBooked.filter((s) => !seatsToFree.includes(s));
-
-  const { error } = await supabase
-    .from("showtimes")
-    .update({ booked_seats: updatedSeats })
-    .eq("id", showtimeId);
+  const { error } = await supabase.rpc("release_seats_safe", {
+    p_showtime_id: showtimeId,
+    p_seats: seatsToFree,
+  });
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }

@@ -128,17 +128,15 @@ CREATE POLICY "Showtimes are viewable by everyone" ON showtimes
 CREATE POLICY "Showtimes are editable by admins" ON showtimes
   FOR ALL USING (auth.uid() IN (SELECT id FROM admins));
 
--- Bookings: public insert, admin read/update
-CREATE POLICY "Anyone can create bookings" ON bookings
-  FOR INSERT WITH CHECK (true);
+-- Bookings: admin read/update (inserts are server-side via service_role, bypassing RLS)
 CREATE POLICY "Admins can view all bookings" ON bookings
   FOR SELECT USING (auth.uid() IN (SELECT id FROM admins));
 CREATE POLICY "Admins can update bookings" ON bookings
   FOR UPDATE USING (auth.uid() IN (SELECT id FROM admins));
 
--- Promo codes: public read for validation, admin write
-CREATE POLICY "Promo codes are viewable by everyone" ON promo_codes
-  FOR SELECT USING (true);
+-- Promo codes: admin view/write (validation is server-side via service_role, bypassing RLS)
+CREATE POLICY "Admins can view all promo codes" ON promo_codes
+  FOR SELECT USING (auth.uid() IN (SELECT id FROM admins));
 CREATE POLICY "Promo codes are editable by admins" ON promo_codes
   FOR ALL USING (auth.uid() IN (SELECT id FROM admins));
 
@@ -161,3 +159,118 @@ CREATE POLICY "Public banner access" ON storage.objects
   FOR SELECT USING (bucket_id = 'movie-banners');
 CREATE POLICY "Admin banner upload" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'movie-banners' AND auth.uid() IN (SELECT id FROM admins));
+
+-- ====================================================
+-- STORED PROCEDURES & PL/PGSQL FUNCTIONS
+-- ====================================================
+
+-- Concurrency-safe seat release
+CREATE OR REPLACE FUNCTION release_seats_safe(
+  p_showtime_id UUID,
+  p_seats TEXT[]
+) RETURNS VOID AS $$
+DECLARE
+  v_current JSONB;
+  v_current_arr TEXT[];
+  v_new_arr TEXT[];
+BEGIN
+  SELECT booked_seats INTO v_current
+  FROM showtimes
+  WHERE id = p_showtime_id
+  FOR UPDATE;
+
+  IF v_current IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT ARRAY(SELECT jsonb_array_elements_text(v_current)) INTO v_current_arr;
+
+  v_new_arr := ARRAY(
+    SELECT unnest(v_current_arr)
+    EXCEPT
+    SELECT unnest(p_seats)
+  );
+
+  UPDATE showtimes
+  SET booked_seats = to_jsonb(v_new_arr)
+  WHERE id = p_showtime_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Promo usage incrementor
+CREATE OR REPLACE FUNCTION increment_promo_usage(promo_code TEXT)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE promo_codes
+  SET times_used = times_used + 1
+  WHERE code = UPPER(promo_code);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Concurrency-safe seat booking with self-healing cleanup
+CREATE OR REPLACE FUNCTION book_seats_safe(
+  p_showtime_id UUID,
+  p_seats TEXT[]
+) RETURNS VOID AS $$
+DECLARE
+  v_current JSONB;
+  v_current_seats TEXT[];
+  v_new_seats TEXT[];
+  v_abandoned_booking RECORD;
+BEGIN
+  -- Lock the row for update to prevent race conditions
+  SELECT booked_seats INTO v_current
+  FROM showtimes
+  WHERE id = p_showtime_id
+  FOR UPDATE;
+
+  IF v_current IS NULL THEN
+    v_current_seats := ARRAY[]::TEXT[];
+  ELSE
+    SELECT ARRAY(SELECT jsonb_array_elements_text(v_current)) INTO v_current_seats;
+  END IF;
+
+  -- Self-healing: Find and cancel abandoned bookings (>10m old) and reclaim their seats
+  FOR v_abandoned_booking IN 
+    SELECT id, selected_seats, booking_id
+    FROM bookings 
+    WHERE showtime_id = p_showtime_id 
+      AND (booking_status = 'pending' OR payment_status = 'initiated' OR payment_status = 'pending')
+      AND created_at < (now() - INTERVAL '10 minutes')
+  LOOP
+    -- Remove abandoned seats from active list
+    SELECT ARRAY(
+      SELECT unnest(v_current_seats)
+      EXCEPT
+      SELECT unnest(ARRAY(SELECT jsonb_array_elements_text(v_abandoned_booking.selected_seats)))
+    ) INTO v_current_seats;
+
+    -- Update booking status to cancelled/failed
+    UPDATE bookings 
+    SET booking_status = 'cancelled', payment_status = 'failed' 
+    WHERE id = v_abandoned_booking.id;
+
+    -- Update payment transaction to expired
+    UPDATE payment_transactions 
+    SET status = 'expired', updated_at = now() 
+    WHERE booking_id = v_abandoned_booking.booking_id;
+  END LOOP;
+
+  -- Check if any of the requested seats are already booked
+  IF p_seats && v_current_seats THEN
+    RAISE EXCEPTION 'One or more selected seats are already booked.';
+  END IF;
+
+  -- Append the new seats (deduplicated)
+  v_new_seats := ARRAY(
+    SELECT DISTINCT unnest(v_current_seats || p_seats)
+  );
+
+  -- Update the showtime
+  UPDATE showtimes
+  SET booked_seats = to_jsonb(v_new_seats)
+  WHERE id = p_showtime_id;
+
+END;
+$$ LANGUAGE plpgsql;
+

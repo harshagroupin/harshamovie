@@ -229,46 +229,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Lock seats atomically
-    let lockSuccess = false;
     const { error: lockErr } = await supabase.rpc("book_seats_safe", {
       p_showtime_id: input.showtimeId,
       p_seats: input.selectedSeats,
     });
 
-    if (!lockErr) {
-      lockSuccess = true;
-    } else {
-      console.warn("[CreateOrder] RPC book_seats_safe failed, trying manual fallback:", lockErr.message);
-      try {
-        const { data: stData, error: fetchErr } = await supabase
-          .from("showtimes")
-          .select("booked_seats")
-          .eq("id", input.showtimeId)
-          .single();
-
-        if (!fetchErr && stData) {
-          const currentBooked = (stData.booked_seats as string[]) || [];
-          const manualConflicts = input.selectedSeats.filter((s) => currentBooked.includes(s));
-          if (manualConflicts.length === 0) {
-            const updatedSeats = [...new Set([...currentBooked, ...input.selectedSeats])];
-            const { error: updateErr } = await supabase
-              .from("showtimes")
-              .update({ booked_seats: updatedSeats })
-              .eq("id", input.showtimeId);
-
-            if (!updateErr) {
-              lockSuccess = true;
-            }
-          }
-        }
-      } catch (fallbackErr) {
-        console.error("[CreateOrder] Manual seat lock fallback failed:", fallbackErr);
-      }
-    }
-
-    if (!lockSuccess) {
+    if (lockErr) {
+      console.error("[CreateOrder] RPC book_seats_safe failed:", lockErr.message);
       return NextResponse.json(
-        { error: "Selected seats are no longer available" },
+        { error: lockErr.message || "Selected seats are no longer available" },
         { status: 409 }
       );
     }

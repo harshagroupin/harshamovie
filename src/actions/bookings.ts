@@ -82,10 +82,11 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     .single();
 
   if (error) {
-    // Rollback: unlock the seats
-    const currentBooked = (showtime.booked_seats as string[]) || [];
-    const updatedSeats = currentBooked.filter((s) => !input.selectedSeats.includes(s));
-    await supabase.from("showtimes").update({ booked_seats: updatedSeats }).eq("id", input.showtimeId);
+    // Rollback: unlock the seats concurrently-safely using the RPC
+    await supabase.rpc("release_seats_safe", {
+      p_showtime_id: input.showtimeId,
+      p_seats: input.selectedSeats,
+    });
     throw new Error(error.message);
   }
 
@@ -157,21 +158,11 @@ export async function cancelBooking(id: string): Promise<void> {
     .eq("id", id);
   if (error) throw new Error(error.message);
 
-  // Free the seats using the admin client
-  const { data: showtime } = await supabase
-    .from("showtimes")
-    .select("booked_seats")
-    .eq("id", booking.showtime_id)
-    .single();
-
-  if (showtime) {
-    const currentBooked = (showtime.booked_seats as string[]) || [];
-    const updatedSeats = currentBooked.filter((s) => !(booking.selected_seats as string[]).includes(s));
-    await supabase
-      .from("showtimes")
-      .update({ booked_seats: updatedSeats })
-      .eq("id", booking.showtime_id);
-  }
+  // Free the seats concurrently-safely using the RPC
+  await supabase.rpc("release_seats_safe", {
+    p_showtime_id: booking.showtime_id,
+    p_seats: booking.selected_seats as string[],
+  });
 
   revalidatePath("/", "layout");
 }
