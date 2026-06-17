@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           txnToken,
           orderId: newOrderId,
-          mid: process.env.PAYTM_MID,
+          mid: process.env.PAYTM_MID?.replace(/^['"]|['"]$/g, ""),
           amount: serverFinalAmount.toFixed(2),
           bookingId: pendingTxn.booking_id,
         });
@@ -334,7 +334,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         txnToken,
         orderId,
-        mid: process.env.PAYTM_MID,
+        mid: process.env.PAYTM_MID?.replace(/^['"]|['"]$/g, ""),
         amount: serverFinalAmount.toFixed(2),
         bookingId,
       });

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Verify Checksum Signature ─────────────────────
-    const merchantKey = process.env.PAYTM_MERCHANT_KEY!;
+    const merchantKey = process.env.PAYTM_MERCHANT_KEY?.replace(/^['"]|['"]$/g, "")!;
     const verifyParams = { ...params };
     delete verifyParams.CHECKSUMHASH;
 

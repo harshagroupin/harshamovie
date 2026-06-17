@@ -4,6 +4,12 @@
  */
 
 import PaytmChecksum from "paytmchecksum";
+import dotenv from "dotenv";
+
+// Ensure environment variables are loaded (fallback for local development/scripts)
+if (!process.env.PAYTM_MERCHANT_KEY) {
+  dotenv.config({ path: ".env.local" });
+}
 
 const BASE_URL = "https://securegw.paytm.in";
 
@@ -17,10 +23,11 @@ export async function generateSignature(
   input: string | Record<string, string>,
   key: string
 ): Promise<string> {
+  const cleanKey = key?.replace(/^['"]|['"]$/g, "");
   if (typeof input === "string") {
-    return PaytmChecksum.generateSignature(input, key);
+    return PaytmChecksum.generateSignature(input, cleanKey);
   }
-  return PaytmChecksum.generateSignature(JSON.stringify(input), key);
+  return PaytmChecksum.generateSignature(JSON.stringify(input), cleanKey);
 }
 
 /**
@@ -33,10 +40,11 @@ export async function verifySignature(
   checksum: string
 ): Promise<boolean> {
   try {
+    const cleanKey = key?.replace(/^['"]|['"]$/g, "");
     if (typeof input === "string") {
-      return PaytmChecksum.verifySignature(input, key, checksum);
+      return PaytmChecksum.verifySignature(input, cleanKey, checksum);
     }
-    return PaytmChecksum.verifySignature(JSON.stringify(input), key, checksum);
+    return PaytmChecksum.verifySignature(JSON.stringify(input), cleanKey, checksum);
   } catch {
     return false;
   }
@@ -83,8 +91,8 @@ export async function initiateTransaction(params: {
   custId: string;
   callbackUrl: string;
 }): Promise<{ txnToken: string }> {
-  const mid = process.env.PAYTM_MID!;
-  const key = process.env.PAYTM_MERCHANT_KEY!;
+  const mid = process.env.PAYTM_MID?.replace(/^['"]|['"]$/g, "")!;
+  const key = process.env.PAYTM_MERCHANT_KEY?.replace(/^['"]|['"]$/g, "")!;
 console.log("MID =", mid);
 console.log("KEY EXISTS =", !!key);
 console.log("KEY LENGTH =", key?.length);
@@ -146,8 +154,8 @@ console.log(
 export async function getTransactionStatus(
   orderId: string
 ): Promise<PaytmStatusResponse> {
-  const mid = process.env.PAYTM_MID!;
-  const key = process.env.PAYTM_MERCHANT_KEY!;
+  const mid = process.env.PAYTM_MID?.replace(/^['"]|['"]$/g, "")!;
+  const key = process.env.PAYTM_MERCHANT_KEY?.replace(/^['"]|['"]$/g, "")!;
 
   const body = { mid, orderId };
   const signature = await PaytmChecksum.generateSignature(
