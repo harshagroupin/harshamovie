@@ -36,14 +36,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
+    // Fetch showtime_id from bookings
+    const { data: bookingInfo } = await supabase
+      .from("bookings")
+      .select("showtime_id")
+      .eq("booking_id", txn.booking_id)
+      .single();
+    const showtimeId = bookingInfo?.showtime_id || null;
+
     // Already finalized — return cached
     if (txn.status === "success") {
-      return NextResponse.json({ status: "success", bookingId: txn.booking_id });
+      return NextResponse.json({ status: "success", bookingId: txn.booking_id, showtimeId });
     }
     if (txn.status === "failed" || txn.status === "expired") {
       return NextResponse.json({
         status: "failed",
         bookingId: txn.booking_id,
+        showtimeId,
         message: "Payment was not successful",
       });
     }
@@ -87,7 +96,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`[Paytm Verify] SUCCESS: order=${orderId}`);
-      return NextResponse.json({ status: "success", bookingId: txn.booking_id });
+      return NextResponse.json({ status: "success", bookingId: txn.booking_id, showtimeId });
     }
 
     if (txnStatus === "PENDING") {
@@ -103,6 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         status: "pending",
         bookingId: txn.booking_id,
+        showtimeId,
         message: "Payment is being processed. Please wait.",
       });
     }
@@ -141,6 +151,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: "failed",
       bookingId: txn.booking_id,
+      showtimeId,
       message: statusResult?.body?.resultInfo?.resultMsg || "Payment failed",
     });
   } catch (err) {
@@ -148,3 +159,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to verify payment" }, { status: 500 });
   }
 }
+

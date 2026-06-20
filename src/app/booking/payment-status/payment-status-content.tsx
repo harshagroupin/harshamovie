@@ -8,6 +8,7 @@ import { Loader2, CheckCircle, XCircle, Clock, RefreshCw, Home } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
+import { cancelPendingBooking } from "@/actions/bookings";
 
 type Status = "loading" | "success" | "pending" | "failed";
 
@@ -19,8 +20,10 @@ export function PaymentStatusContent() {
 
   const [status, setStatus] = useState<Status>("loading");
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [showtimeId, setShowtimeId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [retrying, setRetrying] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const { reset } = useBookingStore();
 
   const verifyPayment = useCallback(async () => {
@@ -38,6 +41,9 @@ export function PaymentStatusContent() {
       });
 
       const data = await res.json();
+      if (data.showtimeId) {
+        setShowtimeId(data.showtimeId);
+      }
 
       if (data.status === "success") {
         setStatus("success");
@@ -84,6 +90,34 @@ export function PaymentStatusContent() {
     setRetrying(false);
   };
 
+  const handleCancelBooking = async () => {
+    if (!orderId) return;
+    setCancelling(true);
+    try {
+      const res = await cancelPendingBooking(orderId);
+      if (res.showtimeId) {
+        setShowtimeId(res.showtimeId);
+      }
+
+      if (res.status === "success") {
+        setStatus("success");
+        setBookingId(res.bookingId);
+        reset();
+        setTimeout(() => {
+          router.push(`/booking/confirmation?id=${res.bookingId}`);
+        }, 2000);
+      } else {
+        setStatus("failed");
+        setMessage(res.message || "Booking was cancelled.");
+      }
+    } catch {
+      setStatus("failed");
+      setMessage("Unable to cancel booking. Please contact support.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen flex items-center justify-center bg-white pt-[80px]">
@@ -121,14 +155,29 @@ export function PaymentStatusContent() {
               </div>
               <h2 className="text-2xl font-bold text-[#131316] mb-2">Payment Processing</h2>
               <p className="text-[#545459] mb-6">{message}</p>
-              <Button
-                onClick={handleRetry}
-                disabled={retrying}
-                className="gap-2 rounded-xl bg-[#131316] text-white hover:bg-[#2C2C30]"
-              >
-                <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
-                Check Again
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleRetry}
+                  disabled={retrying || cancelling}
+                  className="gap-2 rounded-xl bg-[#131316] text-white hover:bg-[#2C2C30]"
+                >
+                  <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
+                  Check Again
+                </Button>
+                <Button
+                  onClick={handleCancelBooking}
+                  disabled={retrying || cancelling}
+                  variant="outline"
+                  className="gap-2 rounded-xl border-[#FF3B30]/30 text-[#FF3B30] hover:bg-[#FF3B30]/10 hover:text-[#FF3B30]"
+                >
+                  {cancelling ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                  Cancel Booking & Release Seats
+                </Button>
+              </div>
             </motion.div>
           )}
 
@@ -141,15 +190,25 @@ export function PaymentStatusContent() {
               <h2 className="text-2xl font-bold text-[#131316] mb-2">Payment Failed</h2>
               <p className="text-[#545459] mb-6">{message}</p>
               <div className="flex flex-col gap-3">
-                {orderId && (
-                  <Button
-                    onClick={handleRetry}
-                    disabled={retrying}
-                    className="gap-2 rounded-xl bg-[#131316] text-white hover:bg-[#2C2C30]"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
-                    Retry Verification
-                  </Button>
+                {showtimeId ? (
+                  <Link href={`/booking/seats?showtime=${showtimeId}`}>
+                    <Button
+                      className="w-full gap-2 rounded-xl bg-[#0B70D5] text-white hover:bg-[#095eb5]"
+                    >
+                      Select Seats Again
+                    </Button>
+                  </Link>
+                ) : (
+                  orderId && (
+                    <Button
+                      onClick={handleRetry}
+                      disabled={retrying}
+                      className="gap-2 rounded-xl bg-[#131316] text-white hover:bg-[#2C2C30]"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${retrying ? "animate-spin" : ""}`} />
+                      Retry Verification
+                    </Button>
+                  )
                 )}
                 <Link href="/">
                   <Button

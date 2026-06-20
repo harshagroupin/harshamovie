@@ -6,6 +6,7 @@ import { generateBookingId } from "@/lib/utils";
 import { updateBookedSeats } from "./showtimes";
 import { revalidatePath } from "next/cache";
 import { calculateSubtotal } from "@/lib/seat-layouts";
+import { getTransactionStatus } from "@/lib/paytm";
 
 interface CreateBookingInput {
   showtimeId: string;
@@ -210,5 +211,107 @@ export async function getUserBookings(email: string): Promise<Booking[]> {
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return data || [];
+}
+
+export async function cancelPendingBooking(orderId: string): Promise<{ success: boolean; status: string; bookingId: string | null; showtimeId: string | null; message: string }> {
+  const supabase = createAdminClient();
+
+  // Find transaction
+  const { data: txn, error: tErr } = await supabase
+    .from("payment_transactions")
+    .select("*")
+    .eq("order_id", orderId)
+    .single();
+
+  if (tErr || !txn) {
+    return { success: false, status: "failed", bookingId: null, showtimeId: null, message: "Transaction not found" };
+  }
+
+  const bookingId = txn.booking_id;
+
+  // Get booking details
+  const { data: booking, error: bErr } = await supabase
+    .from("bookings")
+    .select("showtime_id, selected_seats, booking_status, promo_code_used")
+    .eq("booking_id", bookingId)
+    .single();
+
+  const showtimeId = booking?.showtime_id || null;
+
+  // Already successful or failed/expired
+  if (txn.status === "success") {
+    return { success: false, status: "success", bookingId, showtimeId, message: "Payment is already successful." };
+  }
+
+  if (txn.status === "failed" || txn.status === "expired") {
+    return { success: true, status: "failed", bookingId, showtimeId, message: "Payment has already failed or expired." };
+  }
+
+  // ─── Perform one final Paytm transaction status check ───
+  try {
+    const statusResult = await getTransactionStatus(orderId);
+    const txnStatus = statusResult?.body?.resultInfo?.resultStatus;
+    const txnId = statusResult?.body?.txnId || txn.txn_id;
+
+    if (txnStatus === "TXN_SUCCESS") {
+      // Confirm the booking
+      await supabase
+        .from("payment_transactions")
+        .update({
+          status: "success",
+          txn_id: txnId,
+          gateway_response: statusResult.body,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("order_id", orderId);
+
+      await supabase
+        .from("bookings")
+        .update({
+          payment_status: "completed",
+          booking_status: "confirmed",
+          paytm_order_id: orderId,
+        })
+        .eq("booking_id", bookingId);
+
+      if (booking?.promo_code_used) {
+        await supabase.rpc("increment_promo_usage", {
+          promo_code: booking.promo_code_used,
+        });
+      }
+
+      revalidatePath("/", "layout");
+      return { success: false, status: "success", bookingId, showtimeId, message: "Payment is successful! Confirming your booking." };
+    }
+  } catch (paytmErr) {
+    console.error("[CancelPendingBooking] Paytm verification error before cancel:", paytmErr);
+  }
+
+  // If not TXN_SUCCESS, cancel the booking and release seats
+  await supabase
+    .from("payment_transactions")
+    .update({
+      status: "failed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("order_id", orderId);
+
+  if (booking && booking.booking_status !== "cancelled") {
+    await supabase.rpc("release_seats_safe", {
+      p_showtime_id: booking.showtime_id,
+      p_seats: booking.selected_seats as string[],
+    });
+
+    await supabase
+      .from("bookings")
+      .update({
+        payment_status: "failed",
+        booking_status: "cancelled",
+      })
+      .eq("booking_id", bookingId);
+  }
+
+  revalidatePath("/", "layout");
+  return { success: true, status: "failed", bookingId, showtimeId, message: "Booking cancelled successfully. Seats released." };
 }
 
