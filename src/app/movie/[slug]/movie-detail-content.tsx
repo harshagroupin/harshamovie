@@ -146,7 +146,7 @@ export function MovieDetailContent({ movie, showtimes, faqData }: Props) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="hidden md:block shrink-0 absolute right-4 lg:right-12 top-1/2 -translate-y-[40%] z-20 cursor-pointer group"
+              className="hidden md:block shrink-0 z-20 cursor-pointer group md:-translate-y-9"
               onClick={() => movie.trailer_url && setTrailerOpen(true)}
             >
               <div className="relative w-[220px] lg:w-[260px] aspect-[2/3] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 bg-[#1A1A1A]">

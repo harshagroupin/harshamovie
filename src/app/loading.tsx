@@ -8,7 +8,6 @@ export default function Loading() {
           <Film className="w-7 h-7 text-white" />
         </div>
       </div>
-      <div className="mt-6 w-8 h-8 border-2 border-[#0B70D5]/30 border-t-[#0B70D5] rounded-full animate-spin" />
     </div>
   );
 }

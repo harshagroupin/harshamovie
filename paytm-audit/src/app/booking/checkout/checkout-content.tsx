@@ -177,54 +177,16 @@ export function CheckoutContent() {
         },
       };
 
-      const paytm = (window as any).Paytm;
-      if (paytm && paytm.CheckoutJS) {
-        // Minimal logging to identify the loaded Paytm object structure
-        console.log("[Paytm] Loaded object structure:", {
-          hasPaytm: !!paytm,
-          hasCheckoutJS: !!paytm.CheckoutJS,
-          checkoutJsKeys: Object.keys(paytm.CheckoutJS),
-          onLoadType: typeof paytm.CheckoutJS.onLoad,
-          initType: typeof paytm.CheckoutJS.init,
-          invokeType: typeof paytm.CheckoutJS.invoke,
-        });
-
-        const initCheckout = () => {
-          if (typeof paytm.CheckoutJS.init === "function") {
-            paytm.CheckoutJS.init(config)
-              .then(() => {
-                if (typeof paytm.CheckoutJS.invoke === "function") {
-                  paytm.CheckoutJS.invoke();
-                } else {
-                  console.error("[Paytm] invoke method not available on CheckoutJS");
-                  toast.error("Payment gateway invocation failed");
-                  setSubmitting(false);
-                }
-              })
-              .catch((err: unknown) => {
-                console.error("[Paytm] Init error:", err);
-                toast.error("Failed to open payment gateway");
-                setSubmitting(false);
-              });
-          } else {
-            console.error("[Paytm] init method not available on CheckoutJS");
-            toast.error("Payment gateway initialization failed");
+      const w = window as unknown as Record<string, Record<string, { init: (c: unknown) => Promise<void>; invoke: () => void }>>;
+      if (w.Paytm?.CheckoutJS) {
+        w.Paytm.CheckoutJS.init(config)
+          .then(() => w.Paytm.CheckoutJS.invoke())
+          .catch((err: unknown) => {
+            console.error("[Paytm] Init error:", err);
+            toast.error("Failed to open payment gateway");
             setSubmitting(false);
-          }
-        };
-
-        if (typeof paytm.CheckoutJS.onLoad === "function") {
-          console.log("[Paytm] Wrapping initialization in CheckoutJS.onLoad");
-          paytm.CheckoutJS.onLoad(() => {
-            console.log("[Paytm] CheckoutJS onLoad callback executed");
-            initCheckout();
           });
-        } else {
-          console.log("[Paytm] CheckoutJS.onLoad not found, executing initialization directly");
-          initCheckout();
-        }
       } else {
-        console.error("[Paytm] Paytm or CheckoutJS not found on window object");
         toast.error("Payment gateway not available");
         setSubmitting(false);
       }
@@ -325,6 +287,20 @@ export function CheckoutContent() {
                   </motion.div>
                 )}
                 <p className="text-[11px] text-[#8E8E93] mt-2">Enter a valid promo code to get discounts.</p>
+              </div>
+
+              {/* Payment Mode */}
+              <div className="glass rounded-2xl p-6">
+                <h3 className="font-semibold text-lg text-[#131316] mb-4 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-[#0B70D5]" /> Payment Method
+                </h3>
+                <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-[#0B70D5] bg-[#E2F1FE] text-[#0B70D5]">
+                  <CreditCard className="w-6 h-6" />
+                  <div>
+                    <span className="text-[14px] font-semibold">Pay Online (Paytm)</span>
+                    <p className="text-[11px] text-[#0B70D5]/70 mt-0.5">You will be redirected to Paytm to complete payment securely.</p>
+                  </div>
+                </div>
               </div>
             </div>
 

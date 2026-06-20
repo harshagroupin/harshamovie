@@ -29,7 +29,7 @@ async function testInitiate() {
     const signature = await PaytmChecksum.generateSignature(JSON.stringify(body), key);
     console.log("Generated Signature =", signature);
 
-    const url = `https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=${mid}&orderId=${orderId}`;
+    const url = `https://secure.paytmpayments.com/theia/api/v1/initiateTransaction?mid=${mid}&orderId=${orderId}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

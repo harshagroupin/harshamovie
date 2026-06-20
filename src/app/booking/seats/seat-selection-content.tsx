@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Monitor, Calendar, Clock, Info } from "lucide-react";
+import { ArrowLeft, Monitor, Calendar, Clock, Info, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
@@ -56,8 +56,10 @@ export function SeatSelectionContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-2 border-[#0B70D5] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="w-14 h-14 rounded-2xl bg-[#131316] flex items-center justify-center animate-pulse">
+          <Film className="w-7 h-7 text-white" />
+        </div>
       </div>
     );
   }
@@ -153,66 +155,68 @@ export function SeatSelectionContent() {
               </div>
 
               {/* Seat Grid */}
-              <div className="flex flex-col items-center gap-2 mb-10 overflow-x-auto w-full px-1 sm:px-4 pb-4">
-                {tiers.map(({ tier, label, price }) => {
-                  const tierRows = layout.filter(r => r.tier === tier);
-                  if (tierRows.length === 0) return null;
+              <div className="w-full overflow-x-auto pb-4 mb-10">
+                <div className="min-w-max flex flex-col items-center px-4">
+                  {tiers.map(({ tier, label, price }) => {
+                    const tierRows = layout.filter(r => r.tier === tier);
+                    if (tierRows.length === 0) return null;
 
-                  return (
-                    <div key={tier} className="mb-6 w-full flex flex-col items-center">
-                      <div className="text-[11px] font-bold text-[#8E8E93] uppercase tracking-widest mb-4 border-b border-[#E8E8EA] pb-1">
-                        {label} - {formatCurrency(price)}
-                      </div>
-                      
-                      {tierRows.map((row) => (
-                        <div key={row.id} className="flex items-center gap-1.5 sm:gap-3 mb-1.5 sm:mb-2">
-                          <span className="w-4 text-[11px] text-[#131316] text-right font-mono font-bold">
-                            {row.id}
-                          </span>
-                          
-                          <div className="flex gap-1 sm:gap-1.5 justify-center">
-                            {row.seats.map((seatId, idx) => {
-                              if (seatId === null) {
-                                return <div key={`gap-${row.id}-${idx}`} className="w-4 h-4 sm:w-7 sm:h-7" />;
-                              }
-
-                              const isBooked = bookedSeats.includes(seatId);
-                              const isSelected = selectedSeats.includes(seatId);
-
-                              let seatClass = "seat seat-available flex items-center justify-center text-[10px] font-mono transition-all duration-200";
-                              if (isBooked) seatClass = "seat seat-booked flex items-center justify-center text-[10px] font-mono text-[#8E8E93]";
-                              else if (isSelected) seatClass = "seat seat-selected flex items-center justify-center text-[10px] font-mono font-bold text-white shadow-md transform scale-110";
-                              
-                              if (tier === "recliner" && !isSelected && !isBooked) {
-                                seatClass += " border-[#0B70D5]/40 text-[#0B70D5]";
-                              }
-
-                              const seatNum = seatId.split('-')[1];
-
-                              return (
-                                <motion.button
-                                  key={seatId}
-                                  className={seatClass}
-                                  onClick={() => !isBooked && toggleSeat(seatId)}
-                                  whileHover={!isBooked && !isSelected ? { scale: 1.1 } : undefined}
-                                  whileTap={!isBooked ? { scale: 0.95 } : undefined}
-                                  disabled={isBooked}
-                                  title={isBooked ? "Already booked" : `${seatId} - ${formatCurrency(price)}`}
-                                >
-                                  {isBooked ? "×" : seatNum}
-                                </motion.button>
-                              );
-                            })}
-                          </div>
-                          
-                          <span className="w-4 text-[11px] text-[#131316] font-mono font-bold">
-                            {row.id}
-                          </span>
+                    return (
+                      <div key={tier} className="mb-6 w-full flex flex-col items-center">
+                        <div className="text-[11px] font-bold text-[#8E8E93] uppercase tracking-widest mb-4 border-b border-[#E8E8EA] pb-1">
+                          {label} - {formatCurrency(price)}
                         </div>
-                      ))}
-                    </div>
-                  );
-                })}
+                        
+                        {tierRows.map((row) => (
+                          <div key={row.id} className="flex items-center gap-1.5 sm:gap-3 mb-1.5 sm:mb-2">
+                            <span className="w-4 text-[11px] text-[#131316] text-right font-mono font-bold">
+                              {row.id}
+                            </span>
+                            
+                            <div className="flex gap-1 sm:gap-1.5 justify-center">
+                              {row.seats.map((seatId, idx) => {
+                                if (seatId === null) {
+                                  return <div key={`gap-${row.id}-${idx}`} className="w-4 h-4 sm:w-7 sm:h-7" />;
+                                }
+
+                                const isBooked = bookedSeats.includes(seatId);
+                                const isSelected = selectedSeats.includes(seatId);
+
+                                let seatClass = "seat seat-available flex items-center justify-center text-[10px] font-mono transition-all duration-200";
+                                if (isBooked) seatClass = "seat seat-booked flex items-center justify-center text-[10px] font-mono text-[#8E8E93]";
+                                else if (isSelected) seatClass = "seat seat-selected flex items-center justify-center text-[10px] font-mono font-bold text-white shadow-md transform scale-110";
+                                
+                                if (tier === "recliner" && !isSelected && !isBooked) {
+                                  seatClass += " border-[#0B70D5]/40 text-[#0B70D5]";
+                                }
+
+                                const seatNum = seatId.split('-')[1];
+
+                                return (
+                                  <motion.button
+                                    key={seatId}
+                                    className={seatClass}
+                                    onClick={() => !isBooked && toggleSeat(seatId)}
+                                    whileHover={!isBooked && !isSelected ? { scale: 1.1 } : undefined}
+                                    whileTap={!isBooked ? { scale: 0.95 } : undefined}
+                                    disabled={isBooked}
+                                    title={isBooked ? "Already booked" : `${seatId} - ${formatCurrency(price)}`}
+                                  >
+                                    {isBooked ? "×" : seatNum}
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                            
+                            <span className="w-4 text-[11px] text-[#131316] font-mono font-bold">
+                              {row.id}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Legend */}

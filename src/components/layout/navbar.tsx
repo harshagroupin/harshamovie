@@ -151,7 +151,8 @@ function NavbarContent() {
                 placeholder="Search movies..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full bg-transparent border-none outline-none text-[13px] lg:text-[14px] text-[#131316] placeholder-[#8E8E93] p-0 font-normal leading-none"
+                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-[13px] lg:text-[14px] text-[#131316] placeholder-[#8E8E93] p-0 font-normal leading-none"
+                style={{ outline: 'none', boxShadow: 'none' }}
               />
               {searchQuery && (
                 <button 
