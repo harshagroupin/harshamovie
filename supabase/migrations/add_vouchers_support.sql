@@ -56,8 +56,14 @@ CREATE TABLE IF NOT EXISTS user_vouchers (
     CHECK (payment_status IN ('initiated', 'pending', 'completed', 'failed')),
   payment_mode TEXT DEFAULT 'paytm',
   paytm_order_id TEXT UNIQUE NOT NULL,
+  is_redeemed BOOLEAN DEFAULT false,
+  redeemed_at TIMESTAMPTZ DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Ensure columns exist in case table was created before
+ALTER TABLE user_vouchers ADD COLUMN IF NOT EXISTS is_redeemed BOOLEAN DEFAULT false;
+ALTER TABLE user_vouchers ADD COLUMN IF NOT EXISTS redeemed_at TIMESTAMPTZ DEFAULT NULL;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_uv_email ON user_vouchers(email);

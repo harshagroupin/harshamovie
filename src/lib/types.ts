@@ -97,6 +97,8 @@ export interface UserVoucher {
   payment_status: "initiated" | "pending" | "completed" | "failed";
   payment_mode: string;
   paytm_order_id: string;
+  is_redeemed?: boolean;
+  redeemed_at?: string | null;
   created_at: string;
   voucher?: Voucher;
 }

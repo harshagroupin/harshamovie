@@ -23,6 +23,17 @@ function generateVoucherOrderId(): string {
   return `VCH${ts}${rand}`;
 }
 
+function generateUniqueVoucherCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let part1 = "";
+  let part2 = "";
+  for (let i = 0; i < 4; i++) {
+    part1 += chars.charAt(Math.floor(Math.random() * chars.length));
+    part2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `VCH-${part1}-${part2}`;
+}
+
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
 
@@ -116,7 +127,7 @@ export async function POST(request: NextRequest) {
       .from("user_vouchers")
       .insert({
         voucher_id: voucher.id,
-        voucher_code: voucher.code,
+        voucher_code: generateUniqueVoucherCode(),
         voucher_title: voucher.title,
         customer_name: input.customerName,
         phone: input.phone,

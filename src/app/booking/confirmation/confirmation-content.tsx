@@ -9,12 +9,15 @@ import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { getBookingById } from "@/actions/bookings";
+import { getUserVoucherById } from "@/actions/vouchers";
+import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import { BUSINESS } from "@/lib/constants";
 import type { Booking } from "@/lib/types";
 
 export function ConfirmationContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const bookingId = searchParams.get("id");
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,12 +27,27 @@ export function ConfirmationContent() {
     async function fetchBooking() {
       if (!bookingId) { setLoading(false); return; }
       const data = await getBookingById(bookingId);
-      setBooking(data);
-      setLoading(false);
-      reset(); // Clear booking store after confirmation
+      if (data) {
+        setBooking(data);
+        setLoading(false);
+        reset(); // Clear booking store after confirmation
+      } else {
+        // Fallback: Check if this UUID is a purchased user voucher
+        try {
+          const voucher = await getUserVoucherById(bookingId);
+          if (voucher) {
+            router.replace(`/booking/voucher-status?orderId=${voucher.paytm_order_id}`);
+            return;
+          }
+        } catch (e) {
+          console.error("Voucher fallback check failed:", e);
+        }
+        setBooking(null);
+        setLoading(false);
+      }
     }
     fetchBooking();
-  }, [bookingId, reset]);
+  }, [bookingId, reset, router]);
 
   if (loading) {
     return (

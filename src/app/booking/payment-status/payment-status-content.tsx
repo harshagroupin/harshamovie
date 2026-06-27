@@ -50,12 +50,21 @@ export function PaymentStatusContent() {
         setBookingId(data.bookingId);
         reset();
         setTimeout(() => {
-          router.push(`/booking/confirmation?id=${data.bookingId}`);
+          if (data.isVoucher) {
+            router.push(`/booking/voucher-status?orderId=${orderId}`);
+          } else {
+            router.push(`/booking/confirmation?id=${data.bookingId}`);
+          }
         }, 2000);
       } else if (data.status === "pending") {
         setStatus("pending");
         setBookingId(data.bookingId);
         setMessage(data.message || "Payment is being processed.");
+        if (data.isVoucher) {
+          setTimeout(() => {
+            router.push(`/booking/voucher-status?orderId=${orderId}`);
+          }, 2000);
+        }
       } else {
         setStatus("failed");
         setMessage(data.message || "Payment failed.");

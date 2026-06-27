@@ -41,10 +41,7 @@ export async function verifySignature(
 ): Promise<boolean> {
   try {
     const cleanKey = key?.replace(/^['"]|['"]$/g, "");
-    if (typeof input === "string") {
-      return PaytmChecksum.verifySignature(input, cleanKey, checksum);
-    }
-    return PaytmChecksum.verifySignature(JSON.stringify(input), cleanKey, checksum);
+    return PaytmChecksum.verifySignature(input, cleanKey, checksum);
   } catch {
     return false;
   }

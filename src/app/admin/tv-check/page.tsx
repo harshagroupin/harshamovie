@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Ticket, Gift, CheckCircle, XCircle, Clock, Loader2, User, Phone, Mail, Calendar, CreditCard, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { getBookingDetailsForVerification, getVoucherDetailsForVerification } from "@/actions/vouchers";
+import { getBookingDetailsForVerification, getVoucherDetailsForVerification, redeemVoucherAction } from "@/actions/vouchers";
 import type { Booking, UserVoucher } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -19,6 +19,38 @@ export default function TVCheckPage() {
   const [bookingResult, setBookingResult] = useState<Booking | null>(null);
   const [voucherResult, setVoucherResult] = useState<UserVoucher | null>(null);
   const [searched, setSearched] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
+
+  const handleRedeem = async (codeOrOrderId: string) => {
+    if (!codeOrOrderId.trim()) {
+      toast.error("Please enter a Voucher Code or Paytm Order ID to redeem");
+      return;
+    }
+
+    const confirmRedeem = window.confirm(`Are you sure you want to REDEEM this voucher (${codeOrOrderId})?`);
+    if (!confirmRedeem) return;
+
+    setRedeeming(true);
+    try {
+      const res = await redeemVoucherAction(codeOrOrderId);
+      if (res.success) {
+        toast.success(res.message);
+        setVoucherResult(res.voucher);
+        setSearched(true);
+      } else {
+        toast.error(res.message);
+        if (res.voucher) {
+          setVoucherResult(res.voucher);
+          setSearched(true);
+        }
+      }
+    } catch (err) {
+      toast.error("Redemption failed");
+      console.error(err);
+    } finally {
+      setRedeeming(false);
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,25 +148,44 @@ export default function TVCheckPage() {
               placeholder={
                 activeTab === "ticket"
                   ? "Enter Booking ID or Paytm Order ID..."
-                  : "Enter Voucher Code (e.g. WEEKEND50) or Paytm Order ID..."
+                  : "Enter Voucher Code or Paytm Order ID..."
               }
               className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
             />
           </div>
-          <button
-            type="submit"
-            disabled={searching}
-            className="px-6 py-3.5 rounded-xl bg-[#131316] hover:bg-[#2C2C30] text-white text-sm font-bold transition-all border-0 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 shrink-0"
-          >
-            {searching ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              "Verify Now"
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="submit"
+              disabled={searching || redeeming}
+              className="px-6 py-3.5 rounded-xl bg-[#131316] hover:bg-[#2C2C30] text-white text-sm font-bold transition-all border-0 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {searching ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                "Verify Now"
+              )}
+            </button>
+            {activeTab === "voucher" && (
+              <button
+                type="button"
+                onClick={() => handleRedeem(query)}
+                disabled={searching || redeeming}
+                className="px-6 py-3.5 rounded-xl bg-[#FF3B30] hover:bg-[#E6352B] text-white text-sm font-bold transition-all border-0 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {redeeming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Redeeming...
+                  </>
+                ) : (
+                  "Redeem"
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </form>
 
@@ -266,10 +317,14 @@ export default function TVCheckPage() {
               <div className="bg-white border border-[#E8E8EA] rounded-2xl overflow-hidden shadow-sm">
                 {/* Status Banner */}
                 <div className={`p-6 border-b border-[#E8E8EA] flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                  voucherResult.payment_status === "completed" ? "bg-[#34C759]/5" : "bg-[#FF3B30]/5"
+                  voucherResult.is_redeemed
+                    ? "bg-[#FF3B30]/5 border-b-2 border-b-[#FF3B30]/10"
+                    : (voucherResult.payment_status === "completed" ? "bg-[#34C759]/5" : "bg-[#FF3B30]/5")
                 }`}>
                   <div className="flex items-center gap-3">
-                    {voucherResult.payment_status === "completed" ? (
+                    {voucherResult.is_redeemed ? (
+                      <XCircle className="w-8 h-8 text-[#FF3B30]" />
+                    ) : voucherResult.payment_status === "completed" ? (
                       <CheckCircle className="w-8 h-8 text-[#34C759]" />
                     ) : voucherResult.payment_status === "pending" ? (
                       <Clock className="w-8 h-8 text-[#FF9500]" />
@@ -278,14 +333,30 @@ export default function TVCheckPage() {
                     )}
                     <div>
                       <p className="text-xs text-[#8E8E93] font-semibold uppercase tracking-wider">Voucher Status</p>
-                      <h4 className="text-lg font-bold text-[#131316]">
-                        {voucherResult.payment_status === "completed" ? "Verified & Active" : `Payment ${voucherResult.payment_status}`}
+                      <h4 className={`text-lg font-bold ${voucherResult.is_redeemed ? "text-[#FF3B30]" : "text-[#131316]"}`}>
+                        {voucherResult.is_redeemed 
+                          ? "Redeemed & Used" 
+                          : (voucherResult.payment_status === "completed" ? "Verified & Active" : `Payment ${voucherResult.payment_status}`)}
                       </h4>
                     </div>
                   </div>
-                  <div className="bg-[#E2F1FE] px-4 py-2 rounded-xl border border-[#0B70D5]/20">
-                    <span className="text-[10px] text-[#0B70D5] block font-bold uppercase tracking-wider">Voucher Code</span>
-                    <span className="font-mono font-extrabold text-base text-[#0B70D5]">{voucherResult.voucher_code}</span>
+                  
+                  <div className="flex items-center gap-3">
+                    {!voucherResult.is_redeemed && voucherResult.payment_status === "completed" && (
+                      <button
+                        type="button"
+                        onClick={() => handleRedeem(voucherResult.voucher_code)}
+                        disabled={redeeming}
+                        className="px-4 py-2 rounded-xl bg-[#FF3B30] hover:bg-[#E6352B] text-white text-xs font-bold transition-all border-0 cursor-pointer disabled:opacity-60 flex items-center gap-1.5 shadow-sm"
+                      >
+                        {redeeming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gift className="w-3.5 h-3.5" />}
+                        Redeem Now
+                      </button>
+                    )}
+                    <div className="bg-[#E2F1FE] px-4 py-2 rounded-xl border border-[#0B70D5]/20 shrink-0">
+                      <span className="text-[10px] text-[#0B70D5] block font-bold uppercase tracking-wider">Voucher Code</span>
+                      <span className="font-mono font-extrabold text-base text-[#0B70D5]">{voucherResult.voucher_code}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -347,6 +418,20 @@ export default function TVCheckPage() {
                           </span>
                         </div>
                       </div>
+                      {voucherResult.is_redeemed && (
+                        <div className="border-t border-[#E8E8EA] pt-3">
+                          <span className="text-[10px] text-[#8E8E93] block font-medium">Redemption Details</span>
+                          <span className="text-sm font-bold text-[#FF3B30] block mt-0.5">
+                            Used on {new Date(voucherResult.redeemed_at!).toLocaleString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-xl bg-[#FAFAFA] border border-[#E8E8EA]">

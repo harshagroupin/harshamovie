@@ -384,28 +384,30 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 16 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="bg-white border border-[#E8E8EA] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                          className="bg-white border border-[#E8E8EA] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer"
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-3 mb-3">
-                              <span className="px-2.5 py-0.5 rounded-full bg-[#E2F1FE] text-[#0B70D5] text-[10px] font-extrabold uppercase tracking-wider">
-                                Active Voucher
-                              </span>
-                              <span className="text-[12px] font-bold text-[#34C759]">
-                                Paid {formatCurrency(userVoucher.price)}
-                              </span>
+                          <Link href={`/booking/voucher-status?orderId=${userVoucher.paytm_order_id}`} className="no-underline block">
+                            <div>
+                              <div className="flex items-center justify-between gap-3 mb-3">
+                                <span className="px-2.5 py-0.5 rounded-full bg-[#E2F1FE] text-[#0B70D5] text-[10px] font-extrabold uppercase tracking-wider">
+                                  Active Voucher
+                                </span>
+                                <span className="text-[12px] font-bold text-[#34C759]">
+                                  Paid {formatCurrency(userVoucher.price)}
+                                </span>
+                              </div>
+                              <h3 className="font-bold text-base text-[#131316] group-hover:text-[#0B70D5] transition-colors mb-1">
+                                {userVoucher.voucher_title}
+                              </h3>
+                              <p className="text-xs text-[#8E8E93] mb-4">
+                                Purchased on {new Date(userVoucher.created_at).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric"
+                                })}
+                              </p>
                             </div>
-                            <h3 className="font-bold text-base text-[#131316] mb-1">
-                              {userVoucher.voucher_title}
-                            </h3>
-                            <p className="text-xs text-[#8E8E93] mb-4">
-                              Purchased on {new Date(userVoucher.created_at).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric"
-                              })}
-                            </p>
-                          </div>
+                          </Link>
 
                           <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAFAFA] border border-[#E8E8EA] mt-auto">
                             <div>

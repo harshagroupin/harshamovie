@@ -2,7 +2,13 @@ export const APP_NAME = "Harsh A Movie";
 export const APP_TAGLINE = "Premium Cinema";
 export const APP_DESCRIPTION =
   "Harsh A Movie is Karnal's premier cinema — 3 screens, Dolby Atmos sound, recliner seating. Book tickets online for the latest Bollywood, Hollywood & Punjabi movies now showing at GT Road, Sector 12, Karnal, Haryana.";
-export const APP_URL = "https://harshamovies.com";
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://harshamovies.com");
 
 // Business Info (expanded for Local SEO schema)
 export const BUSINESS = {

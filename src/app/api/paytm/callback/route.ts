@@ -40,8 +40,12 @@ export async function POST(request: NextRequest) {
     const isValid = await verifySignature(verifyParams, merchantKey, checksumHash);
     if (!isValid) {
       console.error("[Paytm Callback] INVALID CHECKSUM:", orderId);
+      const isVoucherOrder = orderId.startsWith("VCH");
+      const errRedirect = isVoucherOrder
+        ? `/booking/voucher-status?orderId=${orderId}&error=invalid_signature`
+        : `/booking/payment-status?orderId=${orderId}&error=invalid_signature`;
       return NextResponse.redirect(
-        new URL(`/booking/payment-status?orderId=${orderId}&error=invalid_signature`, APP_URL),
+        new URL(errRedirect, APP_URL),
         { status: 303 }
       );
     }

@@ -101,6 +101,20 @@ export async function getUserVouchers(email: string): Promise<UserVoucher[]> {
   return data || [];
 }
 
+export async function getUserVoucherById(id: string): Promise<UserVoucher | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("user_vouchers")
+    .select("*, voucher:vouchers(*)")
+    .eq("id", id)
+    .single();
+  if (error) {
+    console.error("getUserVoucherById error:", error.code, error.message);
+    return null;
+  }
+  return data;
+}
+
 export async function getUserVoucherByOrderId(orderId: string): Promise<UserVoucher | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -232,4 +246,67 @@ export async function cancelPendingVoucher(orderId: string): Promise<{ success: 
 
   revalidatePath("/", "layout");
   return { success: true, status: "failed", message: "Order cancelled." };
+}
+
+export async function redeemVoucherAction(query: string): Promise<{
+  success: boolean;
+  message: string;
+  voucher: UserVoucher | null;
+}> {
+  try {
+    await verifyAdmin();
+    const supabase = createAdminClient();
+
+    const { data: userVoucher, error: findErr } = await supabase
+      .from("user_vouchers")
+      .select("*, voucher:vouchers(*)")
+      .or(`voucher_code.eq.${query.trim().toUpperCase()},paytm_order_id.eq.${query.trim()}`)
+      .maybeSingle();
+
+    if (findErr || !userVoucher) {
+      return { success: false, message: "Voucher not found.", voucher: null };
+    }
+
+    if (userVoucher.payment_status !== "completed") {
+      return { success: false, message: "Cannot redeem an unpaid voucher.", voucher: null };
+    }
+
+    if (userVoucher.is_redeemed) {
+      const redeemedTime = userVoucher.redeemed_at 
+        ? new Date(userVoucher.redeemed_at).toLocaleString("en-IN")
+        : "N/A";
+      return { 
+        success: false, 
+        message: `Voucher was already redeemed on ${redeemedTime}.`, 
+        voucher: userVoucher 
+      };
+    }
+
+    const { data: updatedVoucher, error: updateErr } = await supabase
+      .from("user_vouchers")
+      .update({
+        is_redeemed: true,
+        redeemed_at: new Date().toISOString()
+      })
+      .eq("id", userVoucher.id)
+      .select("*, voucher:vouchers(*)")
+      .single();
+
+    if (updateErr || !updatedVoucher) {
+      console.error("Redeem update error:", updateErr);
+      return { 
+        success: false, 
+        message: `Failed to mark voucher as redeemed: ${updateErr?.message || "Make sure you ran the SQL columns migration."}`, 
+        voucher: null 
+      };
+    }
+
+    return { 
+      success: true, 
+      message: "Voucher redeemed successfully!", 
+      voucher: updatedVoucher 
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "An error occurred.", voucher: null };
+  }
 }

@@ -18,6 +18,7 @@ export default function AdminPromosPage() {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeListTab, setActiveListTab] = useState<"ticket" | "food">("ticket");
 
   // Form state
   const [form, setForm] = useState({
@@ -57,7 +58,9 @@ export default function AdminPromosPage() {
       image_url: "",
       terms: "",
       price: "",
-      code: "",
+      code: type === "food" 
+        ? `FOOD-${Math.random().toString(36).substr(2, 5).toUpperCase()}` 
+        : "",
       is_active: true,
       expiry_date: "",
       usage_limit: "0",
@@ -133,10 +136,13 @@ export default function AdminPromosPage() {
     }
   };
 
-  const filtered = vouchers.filter((v) =>
-    v.title.toLowerCase().includes(search.toLowerCase()) ||
-    v.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = vouchers.filter((v) => {
+    const vType = v.voucher_type || "ticket";
+    return vType === activeListTab && (
+      v.title.toLowerCase().includes(search.toLowerCase()) ||
+      v.code.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
@@ -178,6 +184,30 @@ export default function AdminPromosPage() {
         </div>
       </div>
 
+      {/* List Tabs */}
+      <div className="flex border-b border-[#E8E8EA] mb-6">
+        <button
+          onClick={() => setActiveListTab("ticket")}
+          className={`px-5 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer bg-transparent border-0 outline-none ${
+            activeListTab === "ticket"
+              ? "border-[#0B70D5] text-[#0B70D5]"
+              : "border-transparent text-[#8E8E93] hover:text-[#131316]"
+          }`}
+        >
+          Movie Promos (Ticket Vouchers)
+        </button>
+        <button
+          onClick={() => setActiveListTab("food")}
+          className={`px-5 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer bg-transparent border-0 outline-none ${
+            activeListTab === "food"
+              ? "border-amber-500 text-amber-600"
+              : "border-transparent text-[#8E8E93] hover:text-[#131316]"
+          }`}
+        >
+          Food Vouchers (F&B)
+        </button>
+      </div>
+
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -194,9 +224,10 @@ export default function AdminPromosPage() {
                 <tr className="border-b border-[#E8E8EA] bg-[#FAFAFA]">
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Image</th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Title</th>
-                  <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Code</th>
+                  <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">
+                    {activeListTab === "ticket" ? "Promo Code" : "Voucher ID"}
+                  </th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Price</th>
-                  <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Type</th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Status</th>
                   <th className="px-5 py-3.5 text-right text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Actions</th>
                 </tr>
@@ -204,8 +235,8 @@ export default function AdminPromosPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[#8E8E93] text-sm">
-                      No promo codes / vouchers found. Create one!
+                    <td colSpan={6} className="px-5 py-12 text-center text-[#8E8E93] text-sm">
+                      No {activeListTab === "ticket" ? "movie promos" : "food vouchers"} found. Create one!
                     </td>
                   </tr>
                 ) : (
@@ -220,18 +251,11 @@ export default function AdminPromosPage() {
                         <p className="text-sm font-semibold text-[#131316] truncate max-w-[200px]">{voucher.title}</p>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-sm font-bold text-[#0B70D5] bg-[#E2F1FE] px-2 py-0.5 rounded">{voucher.code}</span>
+                        <span className={`font-mono text-sm font-bold px-2 py-0.5 rounded ${
+                          activeListTab === "ticket" ? "text-[#0B70D5] bg-[#E2F1FE]" : "text-amber-600 bg-amber-500/10"
+                        }`}>{voucher.code}</span>
                       </td>
                       <td className="px-5 py-3.5 text-sm font-semibold text-[#131316]">{formatCurrency(voucher.price)}</td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          voucher.voucher_type === "food" 
-                            ? "bg-amber-500/10 text-amber-600" 
-                            : "bg-[#0B70D5]/10 text-[#0B70D5]"
-                        }`}>
-                          {voucher.voucher_type === "food" ? "Food" : "Ticket"}
-                        </span>
-                      </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${voucher.is_active ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"}`}>
                           {voucher.is_active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -284,7 +308,10 @@ export default function AdminPromosPage() {
             >
               <div className="p-6 border-b border-[#E8E8EA] flex items-center justify-between sticky top-0 bg-white z-10">
                 <h3 className="text-lg font-bold text-[#131316]">
-                  {editing ? "Edit Promo / Voucher" : "Create Promo / Voucher"}
+                  {editing 
+                    ? (form.voucher_type === "food" ? "Edit Food Voucher" : "Edit Ticket Promo")
+                    : (form.voucher_type === "food" ? "Create Food Voucher" : "Create Ticket Promo")
+                  }
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -297,7 +324,9 @@ export default function AdminPromosPage() {
               <div className="p-6 space-y-4">
                 {/* Image Preview & Upload */}
                 <div>
-                  <label className="text-[#545459] text-[12px] font-medium block mb-2">Image Banner *</label>
+                  <label className="text-[#545459] text-[12px] font-medium block mb-2">
+                    {form.voucher_type === "food" ? "Food Image Banner *" : "Movie Promo Image Banner *"}
+                  </label>
                   <ImageUpload
                     value={form.image_url}
                     onChange={(url) => setForm({ ...form, image_url: url })}
@@ -308,25 +337,12 @@ export default function AdminPromosPage() {
                   />
                 </div>
 
-                {/* Voucher Type */}
-                <div>
-                  <label className="text-[#545459] text-[12px] font-medium block mb-1">Type *</label>
-                  <select
-                    value={form.voucher_type}
-                    onChange={(e) => setForm({ ...form, voucher_type: e.target.value as "ticket" | "food" })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
-                  >
-                    <option value="ticket">Ticket Voucher (Promo Code)</option>
-                    <option value="food">Food Voucher (Voucher)</option>
-                  </select>
-                </div>
-
                 <div>
                   <label className="text-[#545459] text-[12px] font-medium block mb-1">Title *</label>
                   <input
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="e.g. Weekend Movie Voucher"
+                    placeholder={form.voucher_type === "food" ? "e.g. Burger + Cold Drink Combo" : "e.g. Weekend Movie Discount"}
                     className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
                   />
                 </div>
@@ -336,7 +352,7 @@ export default function AdminPromosPage() {
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Voucher description..."
+                    placeholder={form.voucher_type === "food" ? "Describe the food combo..." : "Describe the movie ticket offer..."}
                     rows={3}
                     className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all resize-none"
                   />
@@ -365,13 +381,26 @@ export default function AdminPromosPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[#545459] text-[12px] font-medium block mb-1">Promo Code *</label>
-                    <input
-                      value={form.code}
-                      onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                      placeholder="WEEKEND50"
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all font-mono"
-                    />
+                    {form.voucher_type === "ticket" ? (
+                      <>
+                        <label className="text-[#545459] text-[12px] font-medium block mb-1">Promo Code *</label>
+                        <input
+                          value={form.code}
+                          onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                          placeholder="WEEKEND50"
+                          className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all font-mono"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-[#545459] text-[12px] font-medium block mb-1">Voucher ID (Auto-generated)</label>
+                        <input
+                          value={form.code}
+                          disabled
+                          className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-[#FAFAFA] text-[#8E8E93] outline-none font-mono cursor-not-allowed"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
