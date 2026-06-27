@@ -7,16 +7,18 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   LogOut, Ticket, Calendar, Clock, Monitor, User,
-  ChevronRight, Film, CreditCard, MapPin
+  ChevronRight, Film, CreditCard, MapPin, Gift, Copy, Check
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getUserBookings } from "@/actions/bookings";
+import { getUserVouchers } from "@/actions/vouchers";
 import { Navbar } from "@/components/layout/navbar";
 import { PageTransition } from "@/components/shared/page-transition";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
-import type { Booking } from "@/lib/types";
+import type { Booking, UserVoucher } from "@/lib/types";
+import { toast } from "sonner";
 
 function getInitial(user: SupabaseUser | null): string {
   if (!user) return "?";
@@ -57,10 +59,13 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [vouchers, setVouchers] = useState<UserVoucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"tickets" | "vouchers">("tickets");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserAndBookings = async () => {
+    const fetchUserAndData = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -73,17 +78,21 @@ export default function ProfilePage() {
 
       try {
         if (session.user.email) {
-          const userBookings = await getUserBookings(session.user.email);
+          const [userBookings, userVouchers] = await Promise.all([
+            getUserBookings(session.user.email),
+            getUserVouchers(session.user.email),
+          ]);
           setBookings(userBookings);
+          setVouchers(userVouchers);
         }
       } catch (error) {
-        console.error("Failed to fetch bookings:", error);
+        console.error("Failed to fetch profile data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserAndBookings();
+    fetchUserAndData();
   }, [router]);
 
   const handleLogout = async () => {
@@ -91,6 +100,13 @@ export default function ProfilePage() {
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
+  };
+
+  const handleCopy = (id: string, code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    toast.success("Voucher code copied!");
+    setTimeout(() => setCopiedId(null), 2500);
   };
 
   if (loading) {
@@ -159,166 +175,267 @@ export default function ProfilePage() {
 
               {/* Stats Row */}
               <div className="flex items-center gap-3 sm:gap-6 mt-8 justify-center sm:justify-start">
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
+                <div
+                  onClick={() => setActiveTab("tickets")}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                    activeTab === "tickets"
+                      ? "bg-white/10 border-white/25 text-white"
+                      : "bg-white/5 border-white/10 text-white/50 hover:bg-white/8 hover:text-white"
+                  }`}
+                >
                   <Ticket className="w-4 h-4 text-[#0B70D5]" />
-                  <span className="text-white font-bold text-sm">{bookings.length}</span>
-                  <span className="text-white/40 text-xs">Bookings</span>
+                  <span className="font-bold text-sm">{bookings.length}</span>
+                  <span className="text-xs">Tickets</span>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <Film className="w-4 h-4 text-[#6444E4]" />
-                  <span className="text-white font-bold text-sm">
-                    {new Set(bookings.map(b => b.showtime?.movie?.title).filter(Boolean)).size}
-                  </span>
-                  <span className="text-white/40 text-xs">Movies</span>
+                <div
+                  onClick={() => setActiveTab("vouchers")}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                    activeTab === "vouchers"
+                      ? "bg-white/10 border-white/25 text-white"
+                      : "bg-white/5 border-white/10 text-white/50 hover:bg-white/8 hover:text-white"
+                  }`}
+                >
+                  <Gift className="w-4 h-4 text-[#6444E4]" />
+                  <span className="font-bold text-sm">{vouchers.length}</span>
+                  <span className="text-xs">Vouchers</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ===== BOOKINGS ===== */}
+          {/* ===== CONTENT LIST ===== */}
           <div className="container-app max-w-4xl mx-auto px-4 -mt-6 pb-16">
             <div className="space-y-4">
-              {/* Section Header */}
-              <div className="flex items-center justify-between px-1 pt-2">
-                <h2 className="text-lg font-bold text-[#131316] flex items-center gap-2">
-                  <Ticket className="w-5 h-5 text-[#0B70D5]" />
-                  My Tickets
-                </h2>
-                <span className="text-xs font-medium text-[#8E8E93]">{bookings.length} booking{bookings.length !== 1 ? "s" : ""}</span>
-              </div>
-
-              {bookings.length === 0 ? (
-                /* ===== EMPTY STATE ===== */
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl p-10 md:p-14 text-center shadow-sm border border-[#E5E7EB]"
-                >
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#E2F1FE] to-[#F0E8FF] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
-                    <Ticket className="w-10 h-10 text-[#0B70D5]" />
+              {/* Tab: Tickets */}
+              {activeTab === "tickets" && (
+                <>
+                  <div className="flex items-center justify-between px-1 pt-2">
+                    <h2 className="text-lg font-bold text-[#131316] flex items-center gap-2">
+                      <Ticket className="w-5 h-5 text-[#0B70D5]" />
+                      My Tickets
+                    </h2>
+                    <span className="text-xs font-medium text-[#8E8E93]">{bookings.length} ticket{bookings.length !== 1 ? "s" : ""}</span>
                   </div>
-                  <h3 className="text-xl font-bold text-[#131316] mb-2">No bookings yet</h3>
-                  <p className="text-[#8E8E93] text-sm mb-8 max-w-xs mx-auto">
-                    Your movie tickets will appear here once you book your first show.
-                  </p>
-                  <Link href="/">
-                    <Button className="bg-[#131316] hover:bg-[#2C2C30] rounded-xl px-8 py-5 font-bold">
-                      Browse Movies
-                    </Button>
-                  </Link>
-                </motion.div>
-              ) : (
-                /* ===== TICKET LIST ===== */
-                <div className="space-y-3">
-                  {bookings.map((booking, idx) => {
-                    const movie = booking.showtime?.movie;
-                    const badge = getStatusBadge(booking);
 
-                    return (
-                      <motion.div
-                        key={booking.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                      >
-                        <Link href={`/booking/confirmation?id=${booking.booking_id}`} className="no-underline group block">
-                          <div className="bg-white rounded-2xl shadow-sm border border-[#E8E8EA] hover:border-[#0B70D5]/20 hover:shadow-md transition-all overflow-hidden">
-                            <div className="flex flex-col sm:flex-row">
-                              {/* Poster */}
-                              <div className="relative w-full sm:w-28 h-40 sm:h-auto shrink-0 bg-gradient-to-br from-[#E8E8EA] to-[#F5F5F6]">
-                                {movie?.poster_url ? (
-                                  <Image
-                                    src={movie.poster_url}
-                                    alt={movie.title || "Movie"}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 640px) 100vw, 112px"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <Film className="w-10 h-10 text-[#D1D5DB]" />
-                                  </div>
-                                )}
-                                {/* Status badge (mobile - overlaid on poster) */}
-                                <div className="absolute top-3 left-3 sm:hidden">
-                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badge.color}`}>
-                                    {badge.label}
-                                  </span>
-                                </div>
-                              </div>
+                  {bookings.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white rounded-2xl p-10 md:p-14 text-center shadow-sm border border-[#E5E7EB]"
+                    >
+                      <div className="w-20 h-20 bg-gradient-to-br from-[#E2F1FE] to-[#F0E8FF] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <Ticket className="w-10 h-10 text-[#0B70D5]" />
+                      </div>
+                      <h3 className="text-xl font-bold text-[#131316] mb-2">No tickets yet</h3>
+                      <p className="text-[#8E8E93] text-sm mb-8 max-w-xs mx-auto">
+                        Your movie tickets will appear here once you book a show.
+                      </p>
+                      <Link href="/">
+                        <Button className="bg-[#131316] hover:bg-[#2C2C30] rounded-xl px-8 py-5 font-bold">
+                          Browse Movies
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  ) : (
+                    <div className="space-y-3">
+                      {bookings.map((booking, idx) => {
+                        const movie = booking.showtime?.movie;
+                        const badge = getStatusBadge(booking);
 
-                              {/* Ticket Divider - dashed line */}
-                              <div className="hidden sm:flex flex-col items-center justify-center px-0 relative">
-                                <div className="absolute -top-3 w-6 h-6 bg-[#F8F9FA] rounded-full" />
-                                <div className="w-px h-full border-l border-dashed border-[#D0D0D4]" />
-                                <div className="absolute -bottom-3 w-6 h-6 bg-[#F8F9FA] rounded-full" />
-                              </div>
-
-                              {/* Content */}
-                              <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between gap-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <h3 className="font-bold text-[15px] sm:text-base text-[#131316] group-hover:text-[#0B70D5] transition-colors truncate">
-                                      {movie?.title || "Movie"}
-                                    </h3>
-                                    <p className="text-xs text-[#8E8E93] mt-0.5 font-mono">
-                                      {booking.booking_id}
-                                    </p>
-                                  </div>
-                                  {/* Status badge (desktop) */}
-                                  <div className="hidden sm:block shrink-0">
-                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badge.color}`}>
-                                      {badge.label}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Meta row */}
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#545459]">
-                                  <span className="flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5 text-[#0B70D5]" />
-                                    {booking.showtime?.show_date ? formatDate(booking.showtime.show_date) : "—"}
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-[#0B70D5]" />
-                                    {booking.showtime?.show_time ? formatTime(booking.showtime.show_time) : "—"}
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <Monitor className="w-3.5 h-3.5 text-[#0B70D5]" />
-                                    {booking.showtime?.screen_name || "—"}
-                                  </span>
-                                </div>
-
-                                {/* Bottom: Seats + Amount */}
-                                <div className="flex items-end justify-between gap-4 pt-1 border-t border-[#F0F0F2]">
-                                  <div className="flex flex-wrap gap-1.5 items-center min-w-0">
-                                    <span className="text-[10px] font-bold text-[#8E8E93] uppercase mr-1">Seats</span>
-                                    {(booking.selected_seats as string[]).slice(0, 6).map(seat => (
-                                      <span key={seat} className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-[#E2F1FE] text-[#0B70D5] border border-[#0B70D5]/15">
-                                        {seat}
-                                      </span>
-                                    ))}
-                                    {(booking.selected_seats as string[]).length > 6 && (
-                                      <span className="text-[10px] text-[#8E8E93]">
-                                        +{(booking.selected_seats as string[]).length - 6}
-                                      </span>
+                        return (
+                          <motion.div
+                            key={booking.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
+                            <Link href={`/booking/confirmation?id=${booking.booking_id}`} className="no-underline group block">
+                              <div className="bg-white rounded-2xl shadow-sm border border-[#E8E8EA] hover:border-[#0B70D5]/20 hover:shadow-md transition-all overflow-hidden">
+                                <div className="flex flex-col sm:flex-row">
+                                  {/* Poster */}
+                                  <div className="relative w-full sm:w-28 h-40 sm:h-auto shrink-0 bg-gradient-to-br from-[#E8E8EA] to-[#F5F5F6]">
+                                    {movie?.poster_url ? (
+                                      <Image
+                                        src={movie.poster_url}
+                                        alt={movie.title || "Movie"}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 640px) 100vw, 112px"
+                                      />
+                                    ) : (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Film className="w-10 h-10 text-[#D1D5DB]" />
+                                      </div>
                                     )}
+                                    <div className="absolute top-3 left-3 sm:hidden">
+                                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badge.color}`}>
+                                        {badge.label}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-sm font-bold text-[#131316]">
-                                      {formatCurrency(booking.final_amount)}
-                                    </span>
-                                    <ChevronRight className="w-4 h-4 text-[#D0D0D4] group-hover:text-[#0B70D5] transition-colors" />
+
+                                  <div className="hidden sm:flex flex-col items-center justify-center px-0 relative">
+                                    <div className="absolute -top-3 w-6 h-6 bg-[#F8F9FA] rounded-full" />
+                                    <div className="w-px h-full border-l border-dashed border-[#D0D0D4]" />
+                                    <div className="absolute -bottom-3 w-6 h-6 bg-[#F8F9FA] rounded-full" />
+                                  </div>
+
+                                  {/* Content */}
+                                  <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between gap-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <h3 className="font-bold text-[15px] sm:text-base text-[#131316] group-hover:text-[#0B70D5] transition-colors truncate">
+                                          {movie?.title || "Movie"}
+                                        </h3>
+                                        <p className="text-xs text-[#8E8E93] mt-0.5 font-mono">
+                                          {booking.booking_id}
+                                        </p>
+                                      </div>
+                                      <div className="hidden sm:block shrink-0">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badge.color}`}>
+                                          {badge.label}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#545459]">
+                                      <span className="flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-[#0B70D5]" />
+                                        {booking.showtime?.show_date ? formatDate(booking.showtime.show_date) : "—"}
+                                      </span>
+                                      <span className="flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-[#0B70D5]" />
+                                        {booking.showtime?.show_time ? formatTime(booking.showtime.show_time) : "—"}
+                                      </span>
+                                      <span className="flex items-center gap-1.5">
+                                        <Monitor className="w-3.5 h-3.5 text-[#0B70D5]" />
+                                        {booking.showtime?.screen_name || "—"}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-end justify-between gap-4 pt-1 border-t border-[#F0F0F2]">
+                                      <div className="flex flex-wrap gap-1.5 items-center min-w-0">
+                                        <span className="text-[10px] font-bold text-[#8E8E93] uppercase mr-1">Seats</span>
+                                        {(booking.selected_seats as string[]).slice(0, 6).map(seat => (
+                                          <span key={seat} className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-[#E2F1FE] text-[#0B70D5] border border-[#0B70D5]/15">
+                                            {seat}
+                                          </span>
+                                        ))}
+                                        {(booking.selected_seats as string[]).length > 6 && (
+                                          <span className="text-[10px] text-[#8E8E93]">
+                                            +{(booking.selected_seats as string[]).length - 6}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-sm font-bold text-[#131316]">
+                                          {formatCurrency(booking.final_amount)}
+                                        </span>
+                                        <ChevronRight className="w-4 h-4 text-[#D0D0D4] group-hover:text-[#0B70D5] transition-colors" />
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Tab: Vouchers */}
+              {activeTab === "vouchers" && (
+                <>
+                  <div className="flex items-center justify-between px-1 pt-2">
+                    <h2 className="text-lg font-bold text-[#131316] flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-[#6444E4]" />
+                      My Purchased Vouchers
+                    </h2>
+                    <span className="text-xs font-medium text-[#8E8E93]">{vouchers.length} voucher{vouchers.length !== 1 ? "s" : ""}</span>
+                  </div>
+
+                  {vouchers.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white rounded-2xl p-10 md:p-14 text-center shadow-sm border border-[#E5E7EB]"
+                    >
+                      <div className="w-20 h-20 bg-gradient-to-br from-[#FEE2E2] to-[#F3E8FF] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
+                        <Gift className="w-10 h-10 text-[#6444E4]" />
+                      </div>
+                      <h3 className="text-xl font-bold text-[#131316] mb-2">No vouchers yet</h3>
+                      <p className="text-[#8E8E93] text-sm mb-8 max-w-xs mx-auto">
+                        Buy exclusive discount vouchers from our offers section to save extra!
+                      </p>
+                      <Link href="/?tab=offers">
+                        <Button className="bg-[#131316] hover:bg-[#2C2C30] rounded-xl px-8 py-5 font-bold">
+                          Browse Vouchers
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {vouchers.map((userVoucher, idx) => (
+                        <motion.div
+                          key={userVoucher.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="bg-white border border-[#E8E8EA] rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                              <span className="px-2.5 py-0.5 rounded-full bg-[#E2F1FE] text-[#0B70D5] text-[10px] font-extrabold uppercase tracking-wider">
+                                Active Voucher
+                              </span>
+                              <span className="text-[12px] font-bold text-[#34C759]">
+                                Paid {formatCurrency(userVoucher.price)}
+                              </span>
                             </div>
+                            <h3 className="font-bold text-base text-[#131316] mb-1">
+                              {userVoucher.voucher_title}
+                            </h3>
+                            <p className="text-xs text-[#8E8E93] mb-4">
+                              Purchased on {new Date(userVoucher.created_at).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric"
+                              })}
+                            </p>
                           </div>
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+
+                          <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAFAFA] border border-[#E8E8EA] mt-auto">
+                            <div>
+                              <span className="text-[9px] text-[#8E8E93] block uppercase tracking-wider font-semibold">Code</span>
+                              <span className="font-mono font-extrabold text-sm text-[#131316] tracking-wide">
+                                {userVoucher.voucher_code}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleCopy(userVoucher.id, userVoucher.voucher_code)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[#131316] text-white hover:bg-[#2C2C30] transition-all border-0 cursor-pointer"
+                            >
+                              {copiedId === userVoucher.id ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -327,3 +444,4 @@ export default function ProfilePage() {
     </>
   );
 }
+

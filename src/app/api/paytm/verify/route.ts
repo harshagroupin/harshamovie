@@ -36,13 +36,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    // Fetch showtime_id from bookings
-    const { data: bookingInfo } = await supabase
-      .from("bookings")
-      .select("showtime_id")
-      .eq("booking_id", txn.booking_id)
-      .single();
-    const showtimeId = bookingInfo?.showtime_id || null;
+    // ─── Detect if this is a Voucher order ─────────────
+    const isVoucherOrder = orderId.startsWith("VCH");
+
+    // Fetch showtime_id from bookings (only for movie orders)
+    let showtimeId: string | null = null;
+    if (!isVoucherOrder) {
+      const { data: bookingInfo } = await supabase
+        .from("bookings")
+        .select("showtime_id")
+        .eq("booking_id", txn.booking_id)
+        .single();
+      showtimeId = bookingInfo?.showtime_id || null;
+    }
 
     // Already finalized — return cached
     if (txn.status === "success") {
@@ -72,6 +78,24 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("order_id", orderId);
+
+      if (isVoucherOrder) {
+        const { data: userVoucher } = await supabase
+          .from("user_vouchers")
+          .update({ payment_status: "completed" })
+          .eq("paytm_order_id", orderId)
+          .select("voucher_id")
+          .maybeSingle();
+
+        if (userVoucher?.voucher_id) {
+          await supabase.rpc("increment_voucher_usage", {
+            p_voucher_id: userVoucher.voucher_id,
+          });
+        }
+
+        console.log(`[Paytm Verify] VOUCHER SUCCESS: order=${orderId}`);
+        return NextResponse.json({ status: "success", bookingId: txn.booking_id, isVoucher: true });
+      }
 
       await supabase
         .from("bookings")
@@ -109,10 +133,18 @@ export async function POST(request: NextRequest) {
         })
         .eq("order_id", orderId);
 
+      if (isVoucherOrder) {
+        await supabase
+          .from("user_vouchers")
+          .update({ payment_status: "pending" })
+          .eq("paytm_order_id", orderId);
+      }
+
       return NextResponse.json({
         status: "pending",
         bookingId: txn.booking_id,
         showtimeId,
+        isVoucher: isVoucherOrder,
         message: "Payment is being processed. Please wait.",
       });
     }
@@ -128,7 +160,21 @@ export async function POST(request: NextRequest) {
       })
       .eq("order_id", orderId);
 
-    // Release seats
+    if (isVoucherOrder) {
+      await supabase
+        .from("user_vouchers")
+        .update({ payment_status: "failed" })
+        .eq("paytm_order_id", orderId);
+
+      console.log(`[Paytm Verify] VOUCHER FAILED: order=${orderId}`);
+      return NextResponse.json({
+        status: "failed",
+        isVoucher: true,
+        message: statusResult?.body?.resultInfo?.resultMsg || "Payment failed",
+      });
+    }
+
+    // Release seats (movie bookings only)
     const { data: booking } = await supabase
       .from("bookings")
       .select("showtime_id, selected_seats, booking_status")

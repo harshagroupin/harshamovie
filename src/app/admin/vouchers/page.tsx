@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, Trash2, X, Tag, ImageIcon, Loader2, Eye, EyeOff, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Gift, ImageIcon, Loader2, Eye, EyeOff, Search } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { getVouchers, createVoucher, updateVoucher, deleteVoucher } from "@/actions/vouchers";
 import type { Voucher } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { ImageUpload } from "@/components/ui/image-upload";
 
-export default function AdminPromosPage() {
+export default function AdminVouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -28,10 +27,6 @@ export default function AdminPromosPage() {
     price: "",
     code: "",
     is_active: true,
-    expiry_date: "",
-    usage_limit: "0",
-    limit_per_user: "0",
-    voucher_type: "ticket" as "ticket" | "food",
   });
 
   const loadVouchers = useCallback(async () => {
@@ -40,7 +35,7 @@ export default function AdminPromosPage() {
       const data = await getVouchers();
       setVouchers(data);
     } catch {
-      toast.error("Failed to load promo codes / vouchers");
+      toast.error("Failed to load vouchers");
     }
     setLoading(false);
   }, []);
@@ -49,21 +44,9 @@ export default function AdminPromosPage() {
     loadVouchers();
   }, [loadVouchers]);
 
-  const openCreateModal = (type: "ticket" | "food") => {
+  const openCreateModal = () => {
     setEditing(null);
-    setForm({
-      title: "",
-      description: "",
-      image_url: "",
-      terms: "",
-      price: "",
-      code: "",
-      is_active: true,
-      expiry_date: "",
-      usage_limit: "0",
-      limit_per_user: "0",
-      voucher_type: type,
-    });
+    setForm({ title: "", description: "", image_url: "", terms: "", price: "", code: "", is_active: true });
     setShowModal(true);
   };
 
@@ -77,10 +60,6 @@ export default function AdminPromosPage() {
       price: String(voucher.price),
       code: voucher.code,
       is_active: voucher.is_active,
-      expiry_date: voucher.expiry_date ? voucher.expiry_date.split("T")[0] : "",
-      usage_limit: String(voucher.usage_limit || 0),
-      limit_per_user: String(voucher.limit_per_user || 0),
-      voucher_type: (voucher.voucher_type as "ticket" | "food") || "ticket",
     });
     setShowModal(true);
   };
@@ -101,18 +80,14 @@ export default function AdminPromosPage() {
         price: parseFloat(form.price),
         code: form.code.toUpperCase(),
         is_active: form.is_active,
-        expiry_date: form.expiry_date ? new Date(form.expiry_date).toISOString() : null,
-        usage_limit: parseInt(form.usage_limit || "0"),
-        limit_per_user: parseInt(form.limit_per_user || "0"),
-        voucher_type: form.voucher_type,
       };
 
       if (editing) {
         await updateVoucher(editing.id, payload);
-        toast.success("Promo / Voucher updated");
+        toast.success("Voucher updated");
       } else {
         await createVoucher(payload);
-        toast.success("Promo / Voucher created");
+        toast.success("Voucher created");
       }
       setShowModal(false);
       loadVouchers();
@@ -125,7 +100,7 @@ export default function AdminPromosPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteVoucher(id);
-      toast.success("Promo code / Voucher deleted");
+      toast.success("Voucher deleted");
       setDeleteConfirm(null);
       loadVouchers();
     } catch (err) {
@@ -144,11 +119,11 @@ export default function AdminPromosPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#E2F1FE] flex items-center justify-center">
-            <Tag className="w-5 h-5 text-[#0B70D5]" />
+            <Gift className="w-5 h-5 text-[#0B70D5]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#131316]">Promo Codes / Vouchers</h1>
-            <p className="text-sm text-[#8E8E93]">{vouchers.length} total codes</p>
+            <h1 className="text-xl font-bold text-[#131316]">Voucher Management</h1>
+            <p className="text-sm text-[#8E8E93]">{vouchers.length} total vouchers</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -157,19 +132,12 @@ export default function AdminPromosPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
+              placeholder="Search vouchers..."
               className="pl-9 pr-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm w-[220px] bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
             />
           </div>
           <button
-            onClick={() => openCreateModal("ticket")}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B70D5] text-white text-sm font-semibold hover:bg-[#095eb5] transition-all cursor-pointer border-0"
-          >
-            <Plus className="w-4 h-4" />
-            Add Promo
-          </button>
-          <button
-            onClick={() => openCreateModal("food")}
+            onClick={openCreateModal}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#131316] text-white text-sm font-semibold hover:bg-[#2C2C30] transition-all cursor-pointer border-0"
           >
             <Plus className="w-4 h-4" />
@@ -196,7 +164,6 @@ export default function AdminPromosPage() {
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Title</th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Code</th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Price</th>
-                  <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Type</th>
                   <th className="px-5 py-3.5 text-left text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Status</th>
                   <th className="px-5 py-3.5 text-right text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">Actions</th>
                 </tr>
@@ -204,8 +171,8 @@ export default function AdminPromosPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[#8E8E93] text-sm">
-                      No promo codes / vouchers found. Create one!
+                    <td colSpan={6} className="px-5 py-12 text-center text-[#8E8E93] text-sm">
+                      No vouchers found. Create your first voucher!
                     </td>
                   </tr>
                 ) : (
@@ -223,15 +190,6 @@ export default function AdminPromosPage() {
                         <span className="font-mono text-sm font-bold text-[#0B70D5] bg-[#E2F1FE] px-2 py-0.5 rounded">{voucher.code}</span>
                       </td>
                       <td className="px-5 py-3.5 text-sm font-semibold text-[#131316]">{formatCurrency(voucher.price)}</td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          voucher.voucher_type === "food" 
-                            ? "bg-amber-500/10 text-amber-600" 
-                            : "bg-[#0B70D5]/10 text-[#0B70D5]"
-                        }`}>
-                          {voucher.voucher_type === "food" ? "Food" : "Ticket"}
-                        </span>
-                      </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${voucher.is_active ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"}`}>
                           {voucher.is_active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -284,7 +242,7 @@ export default function AdminPromosPage() {
             >
               <div className="p-6 border-b border-[#E8E8EA] flex items-center justify-between sticky top-0 bg-white z-10">
                 <h3 className="text-lg font-bold text-[#131316]">
-                  {editing ? "Edit Promo / Voucher" : "Create Promo / Voucher"}
+                  {editing ? "Edit Voucher" : "Create Voucher"}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
@@ -295,30 +253,24 @@ export default function AdminPromosPage() {
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Image Preview & Upload */}
-                <div>
-                  <label className="text-[#545459] text-[12px] font-medium block mb-2">Image Banner *</label>
-                  <ImageUpload
-                    value={form.image_url}
-                    onChange={(url) => setForm({ ...form, image_url: url })}
-                    bucket="vouchers"
-                    label="Upload Banner"
-                    aspectRatio="aspect-[3/1]"
-                    widthClass="w-full"
-                  />
-                </div>
+                {/* Image Preview */}
+                {form.image_url && (
+                  <div className="relative w-full aspect-[3/1] rounded-xl overflow-hidden bg-[#F5F5F6]">
+                    <Image src={form.image_url} alt="Preview" fill className="object-cover" sizes="540px" />
+                  </div>
+                )}
 
-                {/* Voucher Type */}
                 <div>
-                  <label className="text-[#545459] text-[12px] font-medium block mb-1">Type *</label>
-                  <select
-                    value={form.voucher_type}
-                    onChange={(e) => setForm({ ...form, voucher_type: e.target.value as "ticket" | "food" })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
-                  >
-                    <option value="ticket">Ticket Voucher (Promo Code)</option>
-                    <option value="food">Food Voucher (Voucher)</option>
-                  </select>
+                  <label className="text-[#545459] text-[12px] font-medium block mb-1">Image URL *</label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                    <input
+                      value={form.image_url}
+                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                      placeholder="https://your-supabase-storage-url/image.jpg"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -365,7 +317,7 @@ export default function AdminPromosPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[#545459] text-[12px] font-medium block mb-1">Promo Code *</label>
+                    <label className="text-[#545459] text-[12px] font-medium block mb-1">Voucher Code *</label>
                     <input
                       value={form.code}
                       onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -375,41 +327,8 @@ export default function AdminPromosPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[#545459] text-[12px] font-medium block mb-1">Total Limit (0 = unlimited)</label>
-                    <input
-                      type="number"
-                      value={form.usage_limit}
-                      onChange={(e) => setForm({ ...form, usage_limit: e.target.value })}
-                      placeholder="0"
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[#545459] text-[12px] font-medium block mb-1">Limit Per User (0 = unlimited)</label>
-                    <input
-                      type="number"
-                      value={form.limit_per_user}
-                      onChange={(e) => setForm({ ...form, limit_per_user: e.target.value })}
-                      placeholder="0"
-                      className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[#545459] text-[12px] font-medium block mb-1">Expiry Date</label>
-                  <input
-                    type="date"
-                    value={form.expiry_date}
-                    onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[#E8E8EA] text-sm bg-white focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 outline-none transition-all"
-                  />
-                </div>
-
                 <div className="flex items-center gap-3">
-                  <label className="relative inline-flex inline-flex items-center cursor-pointer">
+                  <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.is_active}
@@ -460,7 +379,7 @@ export default function AdminPromosPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="relative bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl z-10"
             >
-              <h3 className="text-lg font-bold text-[#131316] mb-2">Delete Promo / Voucher?</h3>
+              <h3 className="text-lg font-bold text-[#131316] mb-2">Delete Voucher?</h3>
               <p className="text-sm text-[#545459] mb-5">This action cannot be undone. Users who already purchased this voucher will not be affected.</p>
               <div className="flex justify-end gap-3">
                 <button

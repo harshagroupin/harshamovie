@@ -5,9 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Film, Calendar, SlidersHorizontal, ChevronDown, X, Check, Ticket, Gift, Sparkles, CreditCard } from "lucide-react";
-import type { Movie, PromoCode } from "@/lib/types";
+import { ChevronLeft, ChevronRight, Film, Calendar, SlidersHorizontal, ChevronDown, X, Check, Ticket, Gift, Sparkles, CreditCard, FileText, Loader2, Tag, UtensilsCrossed } from "lucide-react";
+import type { Movie, PromoCode, Voucher } from "@/lib/types";
 import { LANGUAGES } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 const ALL_GENRES = [
   "Action", "Adventure", "Animation", "Comedy", "Crime", "Devotional", "Documentary",
@@ -27,6 +30,7 @@ interface HomeContentProps {
   movies: Movie[];
   featuredMovies: Movie[];
   promoCodes?: PromoCode[];
+  vouchers?: Voucher[];
 }
 
 export function HomeContent(props: HomeContentProps) {
@@ -41,7 +45,7 @@ export function HomeContent(props: HomeContentProps) {
   );
 }
 
-function HomeContentInner({ movies, featuredMovies, promoCodes = [] }: HomeContentProps) {
+function HomeContentInner({ movies, featuredMovies, promoCodes = [], vouchers = [] }: HomeContentProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -210,67 +214,7 @@ function HomeContentInner({ movies, featuredMovies, promoCodes = [] }: HomeConte
         
         {/* ===== OFFERS DASHBOARD ===== */}
         {urlTab === "offers" && (
-          <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 animate-fade-in">
-            <div className="mb-8 flex items-center gap-3">
-              <Gift className="w-6 h-6 text-[#E50914]" />
-              <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
-                Exclusive Offers & Promo Codes
-              </h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full px-3 sm:px-0">
-              {(!promoCodes || promoCodes.length === 0) ? (
-                <div className="col-span-1 md:col-span-2 py-12 text-center text-[#545459]">
-                  No exclusive offers available at the moment. Please check back later!
-                </div>
-              ) : (
-                promoCodes.map((promo, index) => {
-                  const colors = [
-                    "from-[#1A1A2E] to-[#16213E]", // Dark Blue
-                    "from-[#511F5C] to-[#380E3F]", // Purple
-                    "from-[#0B3C5D] to-[#328CC1]", // Bright Blue
-                    "from-[#131316] to-[#252529]", // Dark Gray
-                  ];
-                  const gradient = colors[index % colors.length];
-
-                  return (
-                    <div key={promo.id} className={`bg-gradient-to-br ${gradient} text-white p-6 rounded-[24px] border border-white/10 shadow-lg flex flex-col justify-between h-[200px] relative overflow-hidden group hover:scale-[1.01] transition-all`}>
-                      <div className="absolute right-[-20px] bottom-[-20px] opacity-10 group-hover:scale-110 transition-all">
-                        <Gift className="w-[180px] h-[180px] text-white" />
-                      </div>
-                      <div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-white text-[12px] font-extrabold uppercase tracking-wider mb-3">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Special Offer
-                        </div>
-                        <h3 className="text-lg font-bold">
-                          {promo.discount_type === "percentage" 
-                            ? `Get Flat ${promo.discount_value}% Off` 
-                            : `Get Flat ₹${promo.discount_value} Off`}
-                        </h3>
-                        <p className="text-sm text-[#D0D0D4] mt-1">Book your tickets now and enjoy amazing discounts on your checkout.</p>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-auto relative z-10">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[12px] text-[#A0A0A4]">Use Code:</span>
-                          <span className="text-[14px] font-mono font-extrabold text-[#0B70D5] bg-white px-2 py-0.5 rounded">{promo.code}</span>
-                        </div>
-                        <button 
-                          className="text-[13px] font-bold text-white hover:underline bg-transparent border-0 cursor-pointer" 
-                          onClick={() => {
-                            navigator.clipboard.writeText(promo.code);
-                            alert(`Promo code ${promo.code} copied!`);
-                          }}
-                        >
-                          Copy Code
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
+          <VoucherOffersDashboard vouchers={vouchers} />
         )}
 
         {/* ===== REGULAR MOVIE SECTIONS ===== */}
@@ -961,5 +905,114 @@ function EmptyState({ icon, title, description }: { icon: React.ReactNode; title
       <h3 className="text-lg font-bold text-[#131316] mb-1.5">{title}</h3>
       <p className="text-[#545459] text-sm max-w-sm text-center leading-relaxed">{description}</p>
     </motion.div>
+  );
+}
+
+/* ===== VOUCHER OFFERS DASHBOARD ===== */
+function VoucherOffersDashboard({ vouchers }: { vouchers: Voucher[] }) {
+  const tickets = vouchers.filter((v) => !v.voucher_type || v.voucher_type === "ticket");
+  const foods = vouchers.filter((v) => v.voucher_type === "food");
+
+  return (
+    <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 space-y-12 animate-fade-in">
+      
+      {/* ─── TICKET PROMOS SECTION ─── */}
+      {tickets.length > 0 && (
+        <div>
+          <div className="mb-6 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
+            <Tag className="w-5 h-5 text-[#0B70D5]" />
+            <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
+              Ticket Promos (Movie Discount Vouchers)
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {tickets.map((voucher, index) => (
+              <Link key={voucher.id} href={`/offers/${voucher.id}`} className="no-underline block">
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                >
+                  <div className="relative w-full aspect-[3/1]">
+                    <Image
+                      src={voucher.image_url}
+                      alt={voucher.title}
+                      fill
+                      className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {/* Bottom info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                      <h3 className="text-white font-bold text-lg drop-shadow-lg">{voucher.title}</h3>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-white/90 text-sm font-semibold">{formatCurrency(voucher.price)}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold border border-white/30">
+                          Buy Ticket Promo
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── FOOD VOUCHERS SECTION ─── */}
+      {foods.length > 0 && (
+        <div>
+          <div className="mb-6 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
+            <UtensilsCrossed className="w-5 h-5 text-amber-500" />
+            <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
+              Food Vouchers (Combos & Beverages)
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {foods.map((voucher, index) => (
+              <Link key={voucher.id} href={`/offers/${voucher.id}`} className="no-underline block">
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                >
+                  <div className="relative w-full aspect-[3/1]">
+                    <Image
+                      src={voucher.image_url}
+                      alt={voucher.title}
+                      fill
+                      className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {/* Bottom info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                      <h3 className="text-white font-bold text-lg drop-shadow-lg">{voucher.title}</h3>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-white/90 text-sm font-semibold">{formatCurrency(voucher.price)}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold border border-white/30">
+                          Buy Food Voucher
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {vouchers.length === 0 && (
+        <div className="py-12 text-center text-[#545459]">
+          No exclusive promos or vouchers available at the moment. Please check back later!
+        </div>
+      )}
+    </section>
   );
 }

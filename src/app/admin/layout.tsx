@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Film, LayoutDashboard, Clapperboard, Clock, Ticket,
   Tag, Image, LogOut, Menu, X, ChevronLeft, ChevronRight,
-  Sparkles
+  Sparkles, Gift, ClipboardCheck
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { APP_NAME } from "@/lib/constants";
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: "Bookings", href: "/admin/bookings", icon: Ticket, badge: null },
   { label: "Promo Codes", href: "/admin/promos", icon: Tag, badge: null },
   { label: "Banners", href: "/admin/banners", icon: Sparkles, badge: null },
+  { label: "T & V Check", href: "/admin/tv-check", icon: ClipboardCheck, badge: null },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

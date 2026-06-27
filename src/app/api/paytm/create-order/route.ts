@@ -76,6 +76,13 @@ export async function POST(request: NextRequest) {
     const input = parsed.data;
     const supabase = createAdminClient();
 
+    // ─── Auto-Release Expired Seat Locks (15 Minutes) ──
+    try {
+      await supabase.rpc("release_expired_bookings");
+    } catch (rpcErr) {
+      console.error("[CreateOrder] Failed to auto-release expired locks:", rpcErr);
+    }
+
     // ─── Server-Side Calculations & Verification ───────
     // Fetch showtime
     const { data: showtime, error: stErr } = await supabase

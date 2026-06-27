@@ -68,8 +68,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ─── Detect if this is a Voucher order ─────────────
+    const isVoucherOrder = orderId.startsWith("VCH");
+
     // Already processed — skip
     if (txn.status === "success") {
+      if (isVoucherOrder) {
+        return NextResponse.redirect(
+          new URL(`/booking/voucher-status?orderId=${orderId}`, APP_URL),
+          { status: 303 }
+        );
+      }
       return NextResponse.redirect(
         new URL(`/booking/confirmation?id=${txn.booking_id}`, APP_URL),
         { status: 303 }
@@ -89,6 +98,30 @@ export async function POST(request: NextRequest) {
         })
         .eq("order_id", orderId);
 
+      if (isVoucherOrder) {
+        // Update user_vouchers table
+        const { data: userVoucher } = await supabase
+          .from("user_vouchers")
+          .update({ payment_status: "completed" })
+          .eq("paytm_order_id", orderId)
+          .select("voucher_id")
+          .maybeSingle();
+
+        if (userVoucher?.voucher_id) {
+          await supabase.rpc("increment_voucher_usage", {
+            p_voucher_id: userVoucher.voucher_id,
+          });
+        }
+
+        console.log(`[Paytm Callback] VOUCHER SUCCESS: order=${orderId}`);
+
+        return NextResponse.redirect(
+          new URL(`/booking/voucher-status?orderId=${orderId}`, APP_URL),
+          { status: 303 }
+        );
+      }
+
+      // ─── Movie Booking Success ────────────────────────
       await supabase
         .from("bookings")
         .update({
@@ -129,10 +162,21 @@ export async function POST(request: NextRequest) {
         })
         .eq("order_id", orderId);
 
+      if (isVoucherOrder) {
+        await supabase
+          .from("user_vouchers")
+          .update({ payment_status: "pending" })
+          .eq("paytm_order_id", orderId);
+      }
+
       console.log(`[Paytm Callback] PENDING: order=${orderId}`);
 
+      const pendingRedirect = isVoucherOrder
+        ? `/booking/voucher-status?orderId=${orderId}&status=pending`
+        : `/booking/payment-status?orderId=${orderId}&status=pending`;
+
       return NextResponse.redirect(
-        new URL(`/booking/payment-status?orderId=${orderId}&status=pending`, APP_URL),
+        new URL(pendingRedirect, APP_URL),
         { status: 303 }
       );
     } else {
@@ -147,7 +191,21 @@ export async function POST(request: NextRequest) {
         })
         .eq("order_id", orderId);
 
-      // Release locked seats
+      if (isVoucherOrder) {
+        await supabase
+          .from("user_vouchers")
+          .update({ payment_status: "failed" })
+          .eq("paytm_order_id", orderId);
+
+        console.log(`[Paytm Callback] VOUCHER FAILED: order=${orderId}`);
+
+        return NextResponse.redirect(
+          new URL(`/booking/voucher-status?orderId=${orderId}&error=payment_failed`, APP_URL),
+          { status: 303 }
+        );
+      }
+
+      // Release locked seats (movie bookings only)
       const { data: booking } = await supabase
         .from("bookings")
         .select("showtime_id, selected_seats, booking_status")

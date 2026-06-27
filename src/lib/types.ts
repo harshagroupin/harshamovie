@@ -68,6 +68,39 @@ export interface PromoCode {
   is_active: boolean;
 }
 
+export interface Voucher {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  terms: string;
+  price: number;
+  code: string;
+  is_active: boolean;
+  expiry_date?: string | null;
+  usage_limit?: number;
+  times_used?: number;
+  limit_per_user?: number;
+  voucher_type?: "ticket" | "food";
+  created_at: string;
+}
+
+export interface UserVoucher {
+  id: string;
+  voucher_id: string | null;
+  voucher_code: string;
+  voucher_title: string;
+  customer_name: string;
+  phone: string;
+  email: string;
+  price: number;
+  payment_status: "initiated" | "pending" | "completed" | "failed";
+  payment_mode: string;
+  paytm_order_id: string;
+  created_at: string;
+  voucher?: Voucher;
+}
+
 export interface Admin {
   id: string;
   email: string;

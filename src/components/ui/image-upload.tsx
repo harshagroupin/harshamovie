@@ -12,9 +12,18 @@ interface ImageUploadProps {
   onChange: (url: string) => void;
   bucket?: string;
   label?: string;
+  aspectRatio?: string; // e.g. "aspect-[2/3]" or "aspect-[3/1]"
+  widthClass?: string;  // e.g. "max-w-[200px]" or "max-w-[400px] w-full"
 }
 
-export function ImageUpload({ value, onChange, bucket = "movies", label = "Upload Image" }: ImageUploadProps) {
+export function ImageUpload({ 
+  value, 
+  onChange, 
+  bucket = "movies", 
+  label = "Upload Image",
+  aspectRatio = "aspect-[2/3]",
+  widthClass = "max-w-[200px]"
+}: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +86,7 @@ export function ImageUpload({ value, onChange, bucket = "movies", label = "Uploa
   return (
     <div className="space-y-4 w-full">
       {value ? (
-        <div className="relative w-full max-w-[200px] aspect-[2/3] rounded-xl overflow-hidden border border-border group bg-surface-secondary">
+        <div className={`relative ${widthClass} ${aspectRatio} rounded-xl overflow-hidden border border-border group bg-surface-secondary`}>
           <Image src={value} alt="Uploaded" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Button
@@ -94,7 +103,7 @@ export function ImageUpload({ value, onChange, bucket = "movies", label = "Uploa
       ) : (
         <div 
           onClick={() => fileInputRef.current?.click()}
-          className="w-full max-w-[200px] aspect-[2/3] rounded-xl border-2 border-dashed border-border bg-surface-secondary hover:bg-surface-hover hover:border-accent transition-colors flex flex-col items-center justify-center gap-3 cursor-pointer p-4"
+          className={`relative ${widthClass} ${aspectRatio} rounded-xl border-2 border-dashed border-border bg-surface-secondary hover:bg-surface-hover hover:border-accent transition-colors flex flex-col items-center justify-center gap-3 cursor-pointer p-4`}
         >
           {uploading ? (
             <>
@@ -124,14 +133,14 @@ export function ImageUpload({ value, onChange, bucket = "movies", label = "Uploa
       />
       
       {/* Fallback to direct URL input if needed */}
-      <div className="flex items-center gap-2 mt-2">
-        <span className="text-xs text-muted">Or enter URL:</span>
+      <div className="flex items-center gap-2 mt-2 max-w-[400px]">
+        <span className="text-xs text-[#8E8E93] whitespace-nowrap">Or URL:</span>
         <input 
           type="text" 
           value={value} 
           onChange={(e) => onChange(e.target.value)}
           placeholder="https://..."
-          className="flex-1 text-xs px-2 py-1 bg-surface border border-border rounded-md text-foreground outline-none focus:border-accent"
+          className="flex-1 text-xs px-2.5 py-1.5 bg-white border border-[#E8E8EA] rounded-lg text-[#131316] outline-none focus:border-[#0B70D5] focus:ring-1 focus:ring-[#0B70D5]/20 transition-all"
         />
       </div>
     </div>

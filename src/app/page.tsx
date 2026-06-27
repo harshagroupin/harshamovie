@@ -1,5 +1,5 @@
 import { getMovies, getFeaturedMovies } from "@/actions/movies";
-import { getActivePromoCodes } from "@/actions/promos";
+import { getActiveVouchers } from "@/actions/vouchers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { HomeContent } from "./home-content";
@@ -10,10 +10,10 @@ import {
 } from "@/lib/schema";
 
 export default async function HomePage() {
-  const [movies, featured, promoCodes] = await Promise.all([
+  const [movies, featured, vouchers] = await Promise.all([
     getMovies(),
     getFeaturedMovies(),
-    getActivePromoCodes(),
+    getActiveVouchers(),
   ]);
 
   // Server-rendered schemas for SEO
@@ -51,7 +51,7 @@ export default async function HomePage() {
 
       <Navbar />
       <main>
-        <HomeContent movies={movies} featuredMovies={featured} promoCodes={promoCodes} />
+        <HomeContent movies={movies} featuredMovies={featured} vouchers={vouchers} />
 
         {/* ===== SERVER-RENDERED SEO CONTENT FOR AEO/GEO ===== */}
         <section className="w-full max-w-[1264px] mx-auto px-6 sm:px-0 py-12 border-t border-[#E8E8EA]">
