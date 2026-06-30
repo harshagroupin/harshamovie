@@ -16,7 +16,7 @@ import { getUserVoucherById } from "@/actions/vouchers";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 import { BUSINESS } from "@/lib/constants";
-import type { Booking } from "@/lib/types";
+import type { Booking, Movie, Showtime } from "@/lib/types";
 
 /* ===== COUNTDOWN HOOK ===== */
 function useCountdown(showDate?: string, showTime?: string) {
@@ -226,8 +226,8 @@ function TicketCard({
   isPending,
 }: {
   booking: Booking;
-  movie?: Booking["showtime"] extends { movie?: infer M } ? M : never;
-  showtime?: Booking["showtime"];
+  movie?: Movie;
+  showtime?: Showtime;
   isPending: boolean;
 }) {
   const countdown = useCountdown(showtime?.show_date, showtime?.show_time);
