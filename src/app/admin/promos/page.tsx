@@ -332,7 +332,7 @@ export default function AdminPromosPage() {
                     onChange={(url) => setForm({ ...form, image_url: url })}
                     bucket="vouchers"
                     label="Upload Banner"
-                    aspectRatio="aspect-[3/1]"
+                    aspectRatio="aspect-[3/2]"
                     widthClass="w-full"
                   />
                 </div>

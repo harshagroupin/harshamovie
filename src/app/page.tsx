@@ -9,6 +9,8 @@ import {
   generateFAQSchema,
 } from "@/lib/schema";
 
+export const revalidate = 60; // Revalidate cache every 60 seconds
+
 export default async function HomePage() {
   const [movies, featured, vouchers] = await Promise.all([
     getMovies(),

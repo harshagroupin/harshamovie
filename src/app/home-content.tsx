@@ -914,45 +914,41 @@ function VoucherOffersDashboard({ vouchers }: { vouchers: Voucher[] }) {
   const foods = vouchers.filter((v) => v.voucher_type === "food");
 
   return (
-    <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 space-y-12 animate-fade-in">
+    <section className="w-full max-w-[1264px] mx-auto px-3 sm:px-0 space-y-10 animate-fade-in">
       
       {/* ─── TICKET PROMOS SECTION ─── */}
       {tickets.length > 0 && (
         <div>
-          <div className="mb-6 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
+          <div className="mb-4 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
             <Tag className="w-5 h-5 text-[#0B70D5]" />
             <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
               Ticket Promos (Movie Discount Vouchers)
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
             {tickets.map((voucher, index) => (
               <Link key={voucher.id} href={`/offers/${voucher.id}`} className="no-underline block">
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="relative rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
                 >
-                  <div className="relative w-full aspect-[3/1]">
+                  <div className="relative w-full aspect-[2/1]">
                     <Image
                       src={voucher.image_url}
                       alt={voucher.title}
                       fill
                       className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, 50vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    {/* Bottom info */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <h3 className="text-white font-bold text-lg drop-shadow-lg">{voucher.title}</h3>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-white/90 text-sm font-semibold">{formatCurrency(voucher.price)}</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold border border-white/30">
-                          Buy Ticket Promo
-                        </span>
-                      </div>
+                    {/* Subtle gradient at bottom for Buy Now visibility */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
+                    {/* Buy Now button */}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white text-[#131316] text-[12px] font-bold shadow-md group-hover:bg-[#E50914] group-hover:text-white transition-colors">
+                        Buy Now · {formatCurrency(voucher.price)}
+                      </span>
                     </div>
                   </div>
                 </motion.div>
@@ -965,40 +961,36 @@ function VoucherOffersDashboard({ vouchers }: { vouchers: Voucher[] }) {
       {/* ─── FOOD VOUCHERS SECTION ─── */}
       {foods.length > 0 && (
         <div>
-          <div className="mb-6 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
+          <div className="mb-4 flex items-center gap-3 border-b border-[#E8E8EA] pb-3">
             <UtensilsCrossed className="w-5 h-5 text-amber-500" />
             <h2 className="text-xl md:text-2xl font-bold text-[#131316]">
               Food Vouchers (Combos & Beverages)
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
             {foods.map((voucher, index) => (
               <Link key={voucher.id} href={`/offers/${voucher.id}`} className="no-underline block">
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="relative rounded-[20px] overflow-hidden cursor-pointer group shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
                 >
-                  <div className="relative w-full aspect-[3/1]">
+                  <div className="relative w-full aspect-[2/1]">
                     <Image
                       src={voucher.image_url}
                       alt={voucher.title}
                       fill
                       className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, 50vw"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    {/* Bottom info */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <h3 className="text-white font-bold text-lg drop-shadow-lg">{voucher.title}</h3>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-white/90 text-sm font-semibold">{formatCurrency(voucher.price)}</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold border border-white/30">
-                          Buy Food Voucher
-                        </span>
-                      </div>
+                    {/* Subtle gradient at bottom for Buy Now visibility */}
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent" />
+                    {/* Buy Now button */}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white text-[#131316] text-[12px] font-bold shadow-md group-hover:bg-[#E50914] group-hover:text-white transition-colors">
+                        Buy Now · {formatCurrency(voucher.price)}
+                      </span>
                     </div>
                   </div>
                 </motion.div>

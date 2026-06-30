@@ -133,7 +133,7 @@ export function MovieDetailContent({ movie, showtimes, faqData }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <Link href="#showtimes">
+                <Link href="https://www.district.in/movies/harsh-a-movies-karnal-in-karnal-CD1102359">
                   <button className="bg-white text-[#131316] font-bold text-[15px] px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors">
                     Book Tickets
                   </button>
@@ -320,8 +320,7 @@ export function MovieDetailContent({ movie, showtimes, faqData }: Props) {
                         return (
                           <Link
                             key={st.id}
-                            href={isFull ? "#" : `/booking/seats?showtime=${st.id}`}
-                            onClick={() => !isFull && handleSelectShowtime(st)}
+                            href={isFull ? "#" : "https://www.district.in/movies/harsh-a-movies-karnal-in-karnal-CD1102359"}
                             className={`group relative rounded-xl p-3 border transition-all no-underline ${
                               isFull
                                 ? "opacity-40 cursor-not-allowed border-[#E8E8EA] bg-[#F5F5F6]"

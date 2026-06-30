@@ -188,11 +188,11 @@ export default function VoucherDetailsPage() {
             </Link>
 
             {/* Main Details Card */}
-            <div className="bg-white border border-[#E8E8EA] rounded-3xl overflow-hidden shadow-sm flex flex-col md:flex-row">
+            <div className="bg-white border border-[#E8E8EA] rounded-3xl overflow-hidden shadow-sm flex flex-col lg:flex-row">
               
               {/* Left Column: Image Banner and Details */}
-              <div className="flex-1 border-b md:border-b-0 md:border-r border-[#E8E8EA]">
-                <div className="relative w-full aspect-[16/9] bg-[#F5F5F6]">
+              <div className="flex-1 border-b lg:border-b-0 lg:border-r border-[#E8E8EA]">
+                <div className="relative w-full aspect-[2/1] bg-[#F5F5F6]">
                   <Image
                     src={voucher.image_url}
                     alt={voucher.title}
@@ -238,7 +238,7 @@ export default function VoucherDetailsPage() {
               </div>
 
               {/* Right Column: Checkout/Purchase Form */}
-              <div className="w-full md:w-[380px] p-6 md:p-8 bg-[#FAFAFA] flex flex-col justify-between">
+              <div className="w-full lg:w-[380px] shrink-0 p-6 md:p-8 bg-[#FAFAFA] flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-[#131316] mb-1 flex items-center gap-2">
                     <Gift className="w-5 h-5 text-[#6444E4]" />

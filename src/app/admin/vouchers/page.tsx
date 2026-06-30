@@ -255,7 +255,7 @@ export default function AdminVouchersPage() {
               <div className="p-6 space-y-4">
                 {/* Image Preview */}
                 {form.image_url && (
-                  <div className="relative w-full aspect-[3/1] rounded-xl overflow-hidden bg-[#F5F5F6]">
+                  <div className="relative w-full aspect-[3/2] rounded-xl overflow-hidden bg-[#F5F5F6]">
                     <Image src={form.image_url} alt="Preview" fill className="object-cover" sizes="540px" />
                   </div>
                 )}

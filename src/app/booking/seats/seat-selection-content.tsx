@@ -30,29 +30,8 @@ export function SeatSelectionContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchShowtime() {
-      if (!showtimeId) return;
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("showtimes")
-        .select("*, movie:movies(*)")
-        .eq("id", showtimeId)
-        .single();
-
-      if (data) {
-        const st = data as Showtime & { movie: any };
-        setBookedSeats((st.booked_seats as string[]) || []);
-
-        // Set store if navigated directly
-        if (!movieTitle && st.movie) {
-          setMovie({ id: st.movie.id, title: st.movie.title, poster_url: st.movie.poster_url });
-          setStoreShowtime(st);
-        }
-      }
-      setLoading(false);
-    }
-    fetchShowtime();
-  }, [showtimeId, movieTitle, setMovie, setStoreShowtime]);
+    window.location.href = "https://www.district.in/movies/harsh-a-movies-karnal-in-karnal-CD1102359";
+  }, []);
 
   if (loading) {
     return (

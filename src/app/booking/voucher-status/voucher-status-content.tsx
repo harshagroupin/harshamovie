@@ -4,7 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Loader2, CheckCircle, XCircle, Clock, RefreshCw, Home, Gift, Copy, Check, Printer, Info, UtensilsCrossed, QrCode, Ticket } from "lucide-react";
+import {
+  Loader2, CheckCircle, XCircle, Clock, RefreshCw, Home, Gift, Copy, Check,
+  Printer, UtensilsCrossed, QrCode, Ticket, Tag, MapPin, Calendar, ShieldCheck,
+  ChevronRight, Heart, Store, Smartphone, CircleCheckBig,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/shared/page-transition";
 import { getUserVoucherByOrderId, cancelPendingVoucher } from "@/actions/vouchers";
@@ -12,6 +16,7 @@ import type { UserVoucher } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { BUSINESS } from "@/lib/constants";
 
 type Status = "loading" | "success" | "pending" | "failed";
 
@@ -46,7 +51,6 @@ export function VoucherStatusContent() {
 
       if (data.status === "success") {
         setStatus("success");
-        // Fetch voucher details
         const voucher = await getUserVoucherByOrderId(orderId);
         setUserVoucher(voucher);
       } else if (data.status === "pending") {
@@ -116,13 +120,13 @@ export function VoucherStatusContent() {
         pixelRatio: 3,
         backgroundColor: "#ffffff",
       });
-      
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
-      
+
       const imgWidth = 140;
       const rect = element.getBoundingClientRect();
       const imgHeight = (rect.height * imgWidth) / rect.width;
@@ -146,10 +150,12 @@ export function VoucherStatusContent() {
     }
   };
 
+  const isFood = userVoucher?.voucher?.voucher_type === "food";
+
   return (
     <PageTransition>
-      <div className="min-h-screen flex items-center justify-center bg-white pt-[80px]">
-        <div className="max-w-md mx-auto px-6 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F6] pt-[80px] pb-12">
+        <div className="max-w-[440px] mx-auto px-4 sm:px-6 text-center">
           {/* Loading */}
           {status === "loading" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -159,7 +165,7 @@ export function VoucherStatusContent() {
             </motion.div>
           )}
 
-          {/* Success */}
+          {/* ========== SUCCESS ========== */}
           {status === "success" && (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -172,97 +178,17 @@ export function VoucherStatusContent() {
               </div>
               <div className="print:hidden">
                 <h2 className="text-2xl font-bold text-[#131316] mb-1">Voucher Purchased! 🎉</h2>
-                <p className="text-[#545459] text-sm">Show this voucher ticket at the counter to redeem your items.</p>
+                <p className="text-[#545459] text-sm">Show this voucher at the counter to redeem.</p>
               </div>
 
-              {/* 🎫 PREMIUM PRINTABLE TICKET CARD 🎫 */}
+              {/* 🎫 PREMIUM VOUCHER CARD */}
               {userVoucher && (
-                <div id="voucher-ticket-card" className="bg-white border border-[#E8E8EA] rounded-3xl overflow-hidden shadow-xl text-left flex flex-col relative print:border-0 print:shadow-none print:m-0">
-                  
-                  {/* Top section: Brand & Header */}
-                  <div className="bg-[#131316] text-white p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-sm tracking-widest text-[#E50914] uppercase">HARSHA A MOVIE</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/90 text-[9px] font-bold tracking-wider uppercase">
-                      {userVoucher.voucher?.voucher_type === "food" ? "Food Voucher" : "Ticket Promo"}
-                    </span>
-                  </div>
-
-                  {/* Banner Image */}
-                  {userVoucher.voucher?.image_url && (
-                    <div className="relative w-full aspect-[4/1] bg-[#F5F5F6] border-b border-[#E8E8EA] print:hidden">
-                      <img
-                        src={userVoucher.voucher.image_url}
-                        alt={userVoucher.voucher_title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-
-                  {/* Main Details */}
-                  <div className="p-5 space-y-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <h3 className="text-base font-extrabold text-[#131316] leading-snug">{userVoucher.voucher_title}</h3>
-                        <p className="text-[11px] text-[#8E8E93] mt-0.5">Purchased on {new Date(userVoucher.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[#8E8E93] text-[9px] font-bold uppercase tracking-wider block">Paid</span>
-                        <span className="text-[#0B70D5] font-black text-base">{formatCurrency(userVoucher.price)}</span>
-                      </div>
-                    </div>
-
-                    {/* Customer info: Simple inline list */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#545459] border-t border-b border-[#F0F0F2] py-2">
-                      <div>
-                        <span className="text-[#8E8E93] font-medium mr-1">Holder:</span>
-                        <span className="text-[#131316] font-bold">{userVoucher.customer_name}</span>
-                      </div>
-                      <div>
-                        <span className="text-[#8E8E93] font-medium mr-1">Phone:</span>
-                        <span className="text-[#131316] font-bold">{userVoucher.phone}</span>
-                      </div>
-                    </div>
-
-                    {/* Dotted Tear Line Divider */}
-                    <div className="relative flex items-center justify-between py-1">
-                      <div className="absolute left-[-21px] w-4 h-4 rounded-full bg-white border-r border-[#E8E8EA] print:hidden" />
-                      <div className="w-full border-t border-dashed border-[#8E8E93]/30" />
-                      <div className="absolute right-[-21px] w-4 h-4 rounded-full bg-white border-l border-[#E8E8EA] print:hidden" />
-                    </div>
-
-                    {/* Redeem Code & QR Section: side by side to save height! */}
-                    <div className="flex items-center justify-between bg-[#FAFAFA] border border-[#E8E8EA] rounded-2xl p-4">
-                      <div className="space-y-1">
-                        <span className="text-[#8E8E93] text-[9px] font-bold uppercase tracking-wider block">REDEEM CODE</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-lg font-black text-[#0B70D5] tracking-wider">
-                            {userVoucher.voucher_code}
-                          </span>
-                          <button
-                            onClick={handleCopy}
-                            className="p-1.5 rounded-lg bg-white text-[#0B70D5] border border-[#0B70D5]/10 hover:bg-[#E2F1FE] transition-colors cursor-pointer print:hidden"
-                            title="Copy Code"
-                          >
-                            {copied ? <Check className="w-3.5 h-3.5 text-[#34C759]" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-center shrink-0 border-l border-[#E8E8EA] pl-4">
-                        <QrCode className="w-10 h-10 text-[#131316]" />
-                        <span className="text-[7px] text-[#8E8E93] font-bold mt-1 tracking-wider">SHOW AT COUNTER</span>
-                      </div>
-                    </div>
-
-                    {/* Compact instruction note */}
-                    <p className="text-[10px] text-[#8E8E93] leading-snug text-center italic">
-                      * Present this voucher screen or code at the counter to redeem.
-                    </p>
-
-                  </div>
-                </div>
+                <VoucherCard
+                  userVoucher={userVoucher}
+                  isFood={isFood}
+                  copied={copied}
+                  onCopy={handleCopy}
+                />
               )}
 
               {/* Action Buttons */}
@@ -280,13 +206,13 @@ export function VoucherStatusContent() {
                   {downloading ? "Generating PDF..." : "Download PDF"}
                 </Button>
                 <Link href="/profile" className="flex-1">
-                  <Button variant="outline" className="w-full gap-1.5 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-[#F5F5F6] text-sm">
+                  <Button variant="outline" className="w-full gap-1.5 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-white text-sm">
                     <Gift className="w-4 h-4" />
                     My Vouchers
                   </Button>
                 </Link>
                 <Link href="/" className="flex-1">
-                  <Button variant="outline" className="w-full gap-1.5 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-[#F5F5F6] text-sm">
+                  <Button variant="outline" className="w-full gap-1.5 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-white text-sm">
                     <Home className="w-4 h-4" />
                     Back to Home
                   </Button>
@@ -353,7 +279,7 @@ export function VoucherStatusContent() {
                 <Link href="/?tab=offers">
                   <Button
                     variant="outline"
-                    className="w-full gap-2 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-[#F5F5F6]"
+                    className="w-full gap-2 rounded-xl border-[#E8E8EA] text-[#545459] hover:bg-white"
                   >
                     <Home className="w-4 h-4" />
                     Back to Offers
@@ -365,5 +291,264 @@ export function VoucherStatusContent() {
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+/* ===================================================================
+   PREMIUM VOUCHER CARD — matches the reference food voucher design
+   =================================================================== */
+
+function VoucherCard({
+  userVoucher,
+  isFood,
+  copied,
+  onCopy,
+}: {
+  userVoucher: UserVoucher;
+  isFood: boolean;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div
+      id="voucher-ticket-card"
+      className="bg-white rounded-3xl overflow-hidden shadow-xl text-left print:shadow-none print:break-inside-avoid"
+      style={{ fontFamily: "'Inter', 'system-ui', sans-serif" }}
+    >
+      {/* ── HEADER: Dark branded strip ── */}
+      <div className="bg-[#1a1a2e] px-5 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-white font-extrabold text-lg tracking-wider leading-none" style={{ fontFamily: "'Georgia', serif" }}>
+            HARSHA
+          </p>
+          <p className="text-white/60 text-[10px] font-bold tracking-[0.25em] uppercase -mt-0.5">MOVIES</p>
+        </div>
+        <div className="text-right flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            {isFood ? (
+              <span className="text-2xl">🍿</span>
+            ) : (
+              <span className="text-2xl">🎬</span>
+            )}
+            <div>
+              <p className="text-white font-bold text-[13px] tracking-wide">
+                {isFood ? "FOOD VOUCHER" : "TICKET PROMO"}
+              </p>
+              <p className="text-white/50 text-[10px] font-medium">
+                {isFood ? "Enjoy Your Snacks! 🎬" : "Enjoy Your Show! 🎬"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── VOUCHER ID SECTION ── */}
+      <div className="px-5 pt-5 pb-4">
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-[#E50914]/10 flex items-center justify-center shrink-0">
+            {isFood ? (
+              <UtensilsCrossed className="w-8 h-8 text-[#E50914]" />
+            ) : (
+              <Ticket className="w-8 h-8 text-[#E50914]" />
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="flex-1 min-w-0 border-l-2 border-[#E8E8EA] pl-4">
+            <p className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider mb-0.5">Voucher ID</p>
+            <p className="text-xl font-black text-[#131316] tracking-wider font-mono mb-1">{userVoucher.voucher_code}</p>
+            <p className="text-[12px] text-[#8E8E93] leading-relaxed">
+              Valid for the items and quantity mentioned below.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DETAILS SECTION ── */}
+      <div className="px-5 pb-4 space-y-3">
+        {/* Voucher title / description */}
+        <div className="p-4 rounded-2xl bg-[#FAFAFA] border border-[#E8E8EA]">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white border border-[#E8E8EA] flex items-center justify-center shrink-0 mt-0.5">
+              {isFood ? (
+                <span className="text-lg">🍿</span>
+              ) : (
+                <Tag className="w-5 h-5 text-[#0B70D5]" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="text-[14px] font-bold text-[#131316] leading-snug">{userVoucher.voucher_title}</h3>
+              {userVoucher.voucher?.description && (
+                <p className="text-[12px] text-[#8E8E93] mt-1 leading-relaxed">{userVoucher.voucher.description}</p>
+              )}
+            </div>
+            <div className="shrink-0 text-right">
+              <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider block">Paid</span>
+              <span className="text-base font-black text-[#E50914]">{formatCurrency(userVoucher.price)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Redeem At + Purchase Date row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-[#FAFAFA] border border-[#E8E8EA]">
+            <p className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5">Redeem At</p>
+            <div className="flex items-start gap-2">
+              <MapPin className="w-4 h-4 text-[#E50914] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[12px] font-bold text-[#131316] leading-tight">Harsh A Movie</p>
+                <p className="text-[10px] text-[#8E8E93] leading-tight mt-0.5">{BUSINESS.streetAddress}, {BUSINESS.city}, {BUSINESS.state}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-3 rounded-xl bg-[#FAFAFA] border border-[#E8E8EA]">
+            <p className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5">Purchased On</p>
+            <div className="flex items-start gap-2">
+              <Calendar className="w-4 h-4 text-[#E50914] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[12px] font-bold text-[#131316] leading-tight">
+                  {new Date(userVoucher.created_at).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+                <p className="text-[10px] text-[#8E8E93] leading-tight mt-0.5">
+                  {new Date(userVoucher.created_at).toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Customer Info */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#545459] px-1">
+          <div>
+            <span className="text-[#8E8E93] font-medium mr-1">Holder:</span>
+            <span className="text-[#131316] font-bold">{userVoucher.customer_name}</span>
+          </div>
+          <div>
+            <span className="text-[#8E8E93] font-medium mr-1">Phone:</span>
+            <span className="text-[#131316] font-bold">{userVoucher.phone}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DIVIDER (tear line) ── */}
+      <div className="relative flex items-center mx-0">
+        <div className="absolute left-0 w-4 h-8 bg-[#F5F5F6] rounded-r-full print:bg-white" />
+        <div className="w-full border-t-2 border-dashed border-[#E8E8EA]" />
+        <div className="absolute right-0 w-4 h-8 bg-[#F5F5F6] rounded-l-full print:bg-white" />
+      </div>
+
+      {/* ── HOW TO REDEEM ── */}
+      <div className="px-5 py-4">
+        <p className="text-[11px] font-bold text-[#E50914] uppercase tracking-wider mb-3">How to Redeem</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col items-center text-center gap-1.5">
+            <div className="w-10 h-10 rounded-xl bg-[#E50914]/8 border border-[#E50914]/15 flex items-center justify-center">
+              <Store className="w-5 h-5 text-[#E50914]" />
+            </div>
+            <p className="text-[10px] text-[#545459] leading-tight font-medium">
+              Visit the {isFood ? "food" : ""} counter at Harsh A Movie
+            </p>
+          </div>
+          <div className="flex flex-col items-center text-center gap-1.5">
+            <div className="w-10 h-10 rounded-xl bg-[#E50914]/8 border border-[#E50914]/15 flex items-center justify-center">
+              <Smartphone className="w-5 h-5 text-[#E50914]" />
+            </div>
+            <p className="text-[10px] text-[#545459] leading-tight font-medium">
+              Show this voucher to the staff
+            </p>
+          </div>
+          <div className="flex flex-col items-center text-center gap-1.5">
+            <div className="w-10 h-10 rounded-xl bg-[#E50914]/8 border border-[#E50914]/15 flex items-center justify-center">
+              <CircleCheckBig className="w-5 h-5 text-[#E50914]" />
+            </div>
+            <p className="text-[10px] text-[#545459] leading-tight font-medium">
+              Collect your items and enjoy!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── QR + BOOKING ID + BARCODE ── */}
+      <div className="mx-5 mb-4 p-4 rounded-2xl bg-[#FAFAFA] border border-[#E8E8EA]">
+        <div className="flex items-center gap-4">
+          {/* Booking ID */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider mb-0.5">Booking ID</p>
+            <div className="flex items-center gap-2">
+              <p className="text-base font-black text-[#E50914] tracking-wider font-mono truncate">{userVoucher.voucher_code}</p>
+              <button
+                onClick={onCopy}
+                className="p-1.5 rounded-lg bg-white text-[#E50914] border border-[#E50914]/10 hover:bg-[#E50914]/5 transition-colors cursor-pointer print:hidden shrink-0"
+                title="Copy Code"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-[#34C759]" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* QR Code */}
+          <div className="flex flex-col items-center shrink-0 border-l border-[#E8E8EA] pl-4">
+            <div className="w-14 h-14 rounded-xl bg-white border border-[#E8E8EA] flex items-center justify-center mb-1">
+              <QrCode className="w-9 h-9 text-[#131316]" />
+            </div>
+            <p className="text-[7px] text-[#8E8E93] font-mono tracking-wider">Show QR code</p>
+            <p className="text-[7px] text-[#8E8E93] font-mono tracking-wider">at the {isFood ? "food" : ""} counter</p>
+          </div>
+
+          {/* Barcode */}
+          <div className="flex flex-col items-center shrink-0 border-l border-[#E8E8EA] pl-4">
+            <p className="text-[9px] font-bold text-[#8E8E93] uppercase tracking-wider mb-1">Scan at Counter</p>
+            <div className="flex gap-[1px] h-8 items-end">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-[#131316] rounded-[0.5px]"
+                  style={{
+                    width: i % 3 === 0 ? "2px" : "1px",
+                    height: `${20 + (i % 5) * 3}px`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TERMS & CONDITIONS ── */}
+      <div className="px-5 pb-4">
+        <p className="text-[11px] font-bold text-[#131316] uppercase tracking-wider mb-2">Terms & Conditions</p>
+        <ul className="space-y-1">
+          {[
+            "This voucher is valid only for the items and quantity mentioned.",
+            "Voucher can be redeemed only at Harsh A Movie cinema.",
+            "This voucher is not exchangeable for cash.",
+            "Harsh A Movie reserves the right to refuse service in case of misuse.",
+          ].map((term, i) => (
+            <li key={i} className="text-[10px] text-[#8E8E93] leading-relaxed flex items-start gap-1.5">
+              <span className="text-[#8E8E93] mt-0.5">•</span>
+              {term}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── FOOTER: Thank you strip ── */}
+      <div className="bg-[#E50914] px-5 py-3 flex items-center justify-center gap-3">
+        <Heart className="w-4 h-4 text-white fill-white" />
+        <span className="text-white font-bold text-[13px] italic">Thank you!</span>
+        <span className="text-white/70 text-[11px]">|</span>
+        <span className="text-white/80 text-[11px] font-medium">
+          We hope you enjoy your movie and snacks! 🎬
+        </span>
+      </div>
+    </div>
   );
 }
